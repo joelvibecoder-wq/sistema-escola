@@ -1,0 +1,21 @@
+{
+  "id": "./",
+  "name": "Eleição Escolar — Eleição Escolar",
+  "short_name": "Eleição Escolar",
+  "description": "Protótipo PWA educacional de eleição escolar com candidaturas e dados fictícios.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f4faf6",
+  "theme_color": "#125b35",
+  "categories": ["education", "utilities"],
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
