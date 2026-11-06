@@ -14,6 +14,8 @@ Depois, o projeto passou a se chamar **Eleição Escolar** e a hospedagem da int
 - **Hospedagem atual:** Render Static Site, publicando a pasta `public/`.
 - **Deploy:** automático a partir da branch `main` do GitHub.
 - **Interface:** HTML, CSS e JavaScript, responsiva e com recursos PWA (manifest e service worker).
+- **CRUD demonstrativo:** cadastro, listagem, pesquisa, edição e exclusão de registros fictícios na área Administração.
+- **Armazenamento do CRUD:** `localStorage` do navegador atual. Os registros não sincronizam entre aparelhos e podem ser apagados ao limpar os dados do navegador.
 - **Backend original:** Netlify Functions (sessão, voto e apuração) + Netlify Blobs.
 - **Migração incompleta:** as APIs e o armazenamento de Netlify ainda não foram migrados para serviços compatíveis com Render. O serviço Render atual é estático e não executa Netlify Functions nem oferece armazenamento persistente de votos por si só.
 
@@ -22,6 +24,10 @@ A proteção contra repetição na versão de origem é por sessão do navegador
 ## Fluxograma
 
 ![Fluxograma do sistema Eleição Escolar](docs/fluxograma-sistema.svg)
+
+## CRUD local demonstrativo
+
+Na área **Administração / CRUD**, é possível criar, consultar, pesquisar, editar e excluir registros de demonstração (nome fictício, turma e data de nascimento fictícia). O conteúdo fica apenas no `localStorage` daquele navegador. Não utilize informações reais. A API e o banco de dados remoto não fazem parte desta atualização.
 
 ## Tecnologias
 
