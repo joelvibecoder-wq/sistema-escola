@@ -1,4 +1,4 @@
-const CACHE_NAME = "eleitoral-digital-pwa-school-v2";
+const CACHE_NAME = "eleicao-escolar-pwa-v3";
 const APP_SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon.svg"];
 
 self.addEventListener("install", event => {
