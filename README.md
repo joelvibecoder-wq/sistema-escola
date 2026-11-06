@@ -40,3 +40,9 @@ Na área **Administração / CRUD**, é possível criar, consultar, pesquisar, e
 ## Uso responsável
 
 Este é um protótipo educacional com dados inteiramente fictícios. Não utilize para eleições reais, não colete credenciais reais e não cadastre informações pessoais.
+
+## Criação e gerenciamento de eleições
+
+A seção **Administração → Criação de eleição** permite montar uma eleição fictícia com nome, modalidade, município/UF, data e hora de início e encerramento, além de uma descrição/regras. O painel permite listar, editar, ativar/pausar e excluir eleições demonstrativas. A validação exige que o encerramento seja posterior ao início.
+
+**Limite importante:** as eleições são guardadas no `localStorage` do navegador que as criou. Elas não aparecem em outros aparelhos ou para outros usuários, não iniciam uma votação real e ainda não estão conectadas à API nem a um banco de dados remoto.
