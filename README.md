@@ -1,15 +1,36 @@
-# Eleitoral Digital — demonstração v1.3
+# Eleição Escolar — demonstração educacional
 
-Projeto educacional de **simulação eleitoral**, com candidatos, eleitores, urnas e resultados inteiramente fictícios. Não é um sistema oficial e não deve ser usado em eleições reais.
+Projeto de simulação eleitoral para aprendizado. Candidatos, participantes, municípios e resultados são fictícios. Não é um sistema oficial nem deve ser usado em eleições reais. Não insira CPF, telefone, e-mail ou outros dados pessoais reais.
 
-## Deploy no Netlify
+## Histórico do projeto
 
-- Build command: `npm run build`
-- Publish directory: `public`
-- Functions directory: `netlify/functions`
+O sistema começou como **Eleitoral Digital** e foi preparado inicialmente para o Netlify. A estrutura original usa arquivos estáticos em `public/`, rotas de backend em `netlify/functions/` para sessão, voto e resultados, e Netlify Blobs para guardar os votos demonstrativos.
 
-A configuração está em `netlify.toml`. Requer Node.js 20 ou superior. Para testar localmente: `npm install` e `npx netlify dev`.
+Depois, o projeto passou a se chamar **Eleição Escolar** e a hospedagem da interface foi transferida do Netlify para o **Render**. O repositório de publicação é [sistema-escola](https://github.com/joelvibecoder-wq/sistema-escola).
 
-## Limites importantes
+## Estado atual
 
-O bloqueio de repetição é por sessão do navegador, não verifica a identidade de uma pessoa. Apagar cookies ou usar outro navegador cria outra sessão. Não insira CPF, telefone, e-mail real ou outros dados pessoais. Todos os dados exibidos são demonstrativos.
+- **Site publicado:** [https://sistema-escola-p7xy.onrender.com](https://sistema-escola-p7xy.onrender.com)
+- **Hospedagem atual:** Render Static Site, publicando a pasta `public/`.
+- **Deploy:** automático a partir da branch `main` do GitHub.
+- **Interface:** HTML, CSS e JavaScript, responsiva e com recursos PWA (manifest e service worker).
+- **Backend original:** Netlify Functions (sessão, voto e apuração) + Netlify Blobs.
+- **Migração incompleta:** as APIs e o armazenamento de Netlify ainda não foram migrados para serviços compatíveis com Render. O serviço Render atual é estático e não executa Netlify Functions nem oferece armazenamento persistente de votos por si só.
+
+A proteção contra repetição na versão de origem é por sessão do navegador, não por identidade real. Cookies removidos ou outro navegador podem iniciar uma sessão diferente.
+
+## Fluxograma
+
+![Fluxograma do sistema Eleição Escolar](docs/fluxograma-sistema.svg)
+
+## Tecnologias
+
+- HTML, CSS e JavaScript
+- PWA: `public/manifest.webmanifest` e `public/sw.js`
+- GitHub para versionamento e disparo de deploy
+- Render Static Site para publicação da interface
+- Netlify Functions + Netlify Blobs na implementação original do backend
+
+## Uso responsável
+
+Este é um protótipo educacional com dados inteiramente fictícios. Não utilize para eleições reais, não colete credenciais reais e não cadastre informações pessoais.
