@@ -43,6 +43,24 @@ Este é um protótipo educacional com dados inteiramente fictícios. Não utiliz
 
 ## Criação e gerenciamento de eleições
 
-A seção **Administração → Criação de eleição** permite montar uma eleição fictícia com nome, modalidade, município/UF, data e hora de início e encerramento, além de uma descrição/regras. O painel permite listar, editar, ativar/pausar e excluir eleições demonstrativas. A validação exige que o encerramento seja posterior ao início.
+Na aplicação, entre em **Administração** e localize o painel **Criação de eleição**. Nele, você pode configurar e administrar eleições fictícias para testar o sistema.
 
-**Limite importante:** as eleições são guardadas no `localStorage` do navegador que as criou. Elas não aparecem em outros aparelhos ou para outros usuários, não iniciam uma votação real e ainda não estão conectadas à API nem a um banco de dados remoto.
+### Como criar uma eleição
+
+1. Informe o **nome da eleição** (por exemplo, Eleição do Grêmio Estudantil).
+2. Selecione a **modalidade**: grêmio estudantil, representante de turma, direção escolar ou simulação livre.
+3. Preencha o **município** e a **UF**.
+4. Defina a **data e hora de início** e de **encerramento**. O encerramento precisa ser posterior ao início.
+5. Opcionalmente, escreva uma **descrição ou regras da simulação**.
+6. Clique em **Criar eleição**. A eleição será exibida na lista do painel.
+
+### Gerenciar eleições criadas
+
+- **Editar:** altera os dados da eleição selecionada.
+- **Ativar / Pausar:** muda o estado demonstrativo da eleição.
+- **Excluir:** remove a eleição do armazenamento local após confirmação.
+- **Lista:** mostra as eleições que foram criadas nesse navegador.
+
+### Limites desta versão
+
+As eleições são guardadas no `localStorage` do navegador que as criou. Elas não aparecem em outros aparelhos ou para outros usuários, não iniciam uma votação real e ainda não estão conectadas à API nem a um banco de dados remoto. O status Ativa/Pausada é apenas demonstrativo e não controla o acesso à votação.
