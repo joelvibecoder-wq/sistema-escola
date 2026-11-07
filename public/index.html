@@ -274,7 +274,7 @@ showAuth();
 // Criador de eleições fictícias: armazenamento local, sem API ou sincronização.
 const ELECTIONS_KEY="eleicaoEscolarDemoElectionsV1";
 function electionsRead(){try{const v=JSON.parse(localStorage.getItem(ELECTIONS_KEY)||"[]");return Array.isArray(v)?v:[]}catch{return []}}
-function getElectionCandidates(election){if(!election)return [];const list=election.candidates||election.candidateList||[];return Array.isArray(list)?list:[]}function getOpenElection(){const now=Date.now();return electionsRead().find(e=>e.status==="Ativa"&&(!e.start||new Date(e.start).getTime()<=now)&&(!e.end||new Date(e.end).getTime()>=now)&&getElectionCandidates(e).length>=2)||null}
+function getElectionCandidates(election){if(!election)return [];const list=election.candidates||election.candidateList;return Array.isArray(list)?list:people}function getOpenElection(){const now=Date.now();return electionsRead().find(e=>e.status==="Ativa"&&(!e.start||new Date(e.start).getTime()<=now)&&(!e.end||new Date(e.end).getTime()>=now)&&getElectionCandidates(e).length>=2)||null}
 function electionsWrite(items){try{localStorage.setItem(ELECTIONS_KEY,JSON.stringify(items));return true}catch{toast("Não foi possível salvar as eleições neste navegador.");return false}}
 function electionEscape(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function electionFormat(v){if(!v)return "—";const d=new Date(v);return Number.isNaN(d.getTime())?v:d.toLocaleString("pt-BR")}
