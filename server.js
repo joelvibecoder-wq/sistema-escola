@@ -7,7 +7,7 @@ import { randomUUID } from "node:crypto";
 const {Pool}=pg, app=express(), port=process.env.PORT||10000;
 if(!process.env.DATABASE_URL||!process.env.JWT_SECRET) throw new Error("DATABASE_URL e JWT_SECRET são obrigatórios");
 const db=new Pool({connectionString:process.env.DATABASE_URL,ssl:{rejectUnauthorized:false}});
-app.use(cors({origin:true})); app.use(express.json({limit:"100kb"}));
+app.use(cors({origin:true})); app.use(express.json({limit:"100kb"})); app.use(express.static("public"));
 const run=(fn)=>(req,res,next)=>Promise.resolve(fn(req,res,next)).catch(next);
 const auth=(req,res,next)=>{try{req.user=jwt.verify((req.headers.authorization||"").replace(/^Bearer /,""),process.env.JWT_SECRET);next()}catch{res.status(401).json({error:"Sessão inválida ou expirada."})}};
 const token=id=>jwt.sign({id},process.env.JWT_SECRET,{expiresIn:"8h"});
