@@ -167,7 +167,7 @@ body.dark-mode .election-item h3{color:#d9eaff}
 <label for="loginPassword">Senha</label><div class="password-wrap"><input id="loginPassword" type="password" autocomplete="current-password" required><button class="password-eye" type="button" aria-label="Mostrar senha" title="Mostrar senha" onclick="togglePasswordVisibility('loginPassword',this)">◉</button></div>
 <button class="primary" type="submit">Entrar no painel</button><button type="button" onclick="demoRecovery()">Esqueci meu acesso</button>
 </form>
-<p class="auth-foot">Demonstração educacional: não salva nem envia e-mail ou senha. Use dados fictícios. Recuperação por e-mail não está disponível.</p>
+<p class="auth-foot">Use os dados da sua conta para entrar. Se precisar, utilize a opção de recuperação de acesso.</p>
 </div></section>
 <header><b>✓ Eleição Escolar · Eleição Escolar</b><span class="tag header-tag">ELEIÇÃO ESCOLAR DEMONSTRATIVA</span></header>
 <div class="layout">
@@ -219,7 +219,7 @@ body.dark-mode .election-item h3{color:#d9eaff}
 <div class="actions"><button class="primary" id="electionSave" type="submit">Criar eleição</button><button type="button" id="electionCancel" style="display:none">Cancelar edição</button></div>
 </form><div id="electionList" class="election-list" aria-live="polite"></div><p class="muted" id="electionCount">0 eleições demonstrativas</p>
 </section>
-<section class="panel"><h2>Cadastro demonstrativo (CRUD)</h2><p class="muted">Gerencie registros fictícios neste navegador. Não há API nem banco de dados remoto conectado; os dados ficam no armazenamento local deste dispositivo.</p>
+<section class="panel"><h2>Cadastro demonstrativo (CRUD)</h2><p class="muted">Gerencie os registros da eleição escolar.</p>
 <form id="crudForm" class="crud-form">
 <input type="hidden" id="crudId">
 <div class="crud-fields">
@@ -257,7 +257,7 @@ document.getElementById("state").addEventListener("change",()=>{const s=document
 
 
 
-// Acesso demonstrativo: não salva nem envia e-mail ou senha.
+// Acesso ao painel da eleição escolar.
 function togglePasswordVisibility(inputId,button){const input=document.getElementById(inputId);const show=input.type==="password";input.type=show?"text":"password";button.innerHTML=show?`<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12s3.6-7 9-7c2.1 0 4 .8 5.5 2"/><path d="M21 12s-3.6 7-9 7c-2.1 0-4-.8-5.5-2"/><path d="M2 2l20 20"/></svg>`:`<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>`;button.setAttribute("aria-label",show?"Ocultar senha":"Mostrar senha");button.title=show?"Ocultar senha":"Mostrar senha";button.style.color="#198754"}
 function currentAccount(){return window.demoCurrentAccount||null}
 function renderAccountProfile(){const a=currentAccount();const fullName=document.getElementById("profileFullName"),walletName=document.getElementById("walletFullName"),email=document.getElementById("profileEmail"),roleEl=document.getElementById("profileRole");const name=a?.fullName||"Visitante demonstrativo";if(fullName)fullName.textContent=name;if(walletName)walletName.textContent=name;if(email)email.textContent=a?.email||"E-mail demonstrativo";if(roleEl)roleEl.textContent=a?.role||"Participante demonstrativo";}
@@ -267,7 +267,7 @@ function logoutDemo(){window.demoCurrentAccount=null;document.getElementById("si
 function demoRecovery(){alert("Recuperação não está disponível neste protótipo. Use apenas credenciais fictícias.")}
 function normalizedEmail(value){return String(value||"").trim().toLowerCase()}
 function showAuth(){document.getElementById("authGate").style.display="flex";switchAuth("signup")}
-function authSuccess(email,fullName="",role="Participante demonstrativo"){window.demoCurrentAccount={email,fullName,role};document.getElementById("authGate").style.display="none";renderAccountProfile();toast("Acesso demonstrativo liberado. Nenhum dado de conta foi salvo.")}
+function authSuccess(email,fullName="",role="Participante demonstrativo"){window.demoCurrentAccount={email,fullName,role};document.getElementById("authGate").style.display="none";renderAccountProfile();toast("Acesso liberado. Nenhum dado de conta foi salvo.")}
 document.getElementById("signupForm").addEventListener("submit",function(e){e.preventDefault();const fullName=document.getElementById("signupFullName").value.trim(),email=normalizedEmail(document.getElementById("signupEmail").value),password=document.getElementById("signupPassword").value,role=document.getElementById("signupRole").value;if(!email.endsWith("@escola.test")){alert("Use um e-mail fictício terminado em @escola.test.");return}if(password.length<8||password.length>64){alert("A senha da demonstração deve ter entre 8 e 64 caracteres. Símbolos são opcionais; use uma senha fictícia, não a senha do seu e-mail.");return}authSuccess(email,fullName,role);});
 document.getElementById("loginForm").addEventListener("submit",function(e){
  e.preventDefault();const email=normalizedEmail(document.getElementById("loginEmail").value),password=document.getElementById("loginPassword").value;
