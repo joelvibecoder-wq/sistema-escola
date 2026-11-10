@@ -330,8 +330,44 @@
    window.google.accounts.id.renderButton($("googleLinkButton"),{theme:"outline",size:"medium",width:230});
   },180);
  }
+
+ async function checkAdminSetupAvailability(){
+  try{
+   const result=await api("/api/admin/setup-status");
+   $("adminSetupEntry").hidden=!result.available;
+  }catch{ $("adminSetupEntry").hidden=true; }
+ }
+ $("showAdminSetup").onclick=()=>{
+  $("adminSetupForm").hidden=false;
+  $("showAdminSetup").hidden=true;
+  $("setupAdminName").focus();
+ };
+ $("cancelAdminSetup").onclick=()=>{
+  $("adminSetupForm").reset();
+  $("adminSetupForm").hidden=true;
+  $("showAdminSetup").hidden=false;
+ };
+ $("adminSetupForm").onsubmit=async event=>{
+  event.preventDefault();
+  const button=$("createAdminBtn");button.disabled=true;
+  try{
+   const data=await api("/api/admin/setup","POST",{
+    name:$("setupAdminName").value,
+    email:$("setupAdminEmail").value,
+    password:$("setupAdminPassword").value,
+    setupToken:$("setupAdminCode").value
+   });
+   $("adminSetupForm").reset();
+   $("adminSetupEntry").hidden=true;
+   S.user=data.user;
+   await afterLogin();
+   message("Administração ativada. Agora você pode aprovar os cadastros.");
+  }catch(e){message(e.message);}
+  finally{button.disabled=false;}
+ };
  async function start(){
   setAuth("login");showAuth("");
+  await checkAdminSetupAvailability();
   try{
    const config=await api("/api/config");S.googleClientId=config.googleClientId;
    if(S.googleClientId)loadGoogle(S.googleClientId);
