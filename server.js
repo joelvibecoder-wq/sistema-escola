@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import rateLimit from "express-rate-limit";
 import { OAuth2Client } from "google-auth-library";
-import { randomUUID } from "node:crypto";
+import { randomUUID, timingSafeEqual } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -67,7 +67,8 @@ async function initDb(){
   "CREATE TABLE IF NOT EXISTS kv_candidates (id UUID PRIMARY KEY,election_id UUID NOT NULL REFERENCES kv_elections(id) ON DELETE RESTRICT,name TEXT NOT NULL,number TEXT NOT NULL,office TEXT DEFAULT '',proposals TEXT DEFAULT '',UNIQUE(election_id,number),UNIQUE(id,election_id));"+
   "CREATE TABLE IF NOT EXISTS kv_participation (election_id UUID NOT NULL REFERENCES kv_elections(id) ON DELETE RESTRICT,user_id UUID NOT NULL REFERENCES kv_users(id) ON DELETE RESTRICT,PRIMARY KEY(election_id,user_id));"+
   "CREATE TABLE IF NOT EXISTS kv_ballots (id UUID PRIMARY KEY,election_id UUID NOT NULL REFERENCES kv_elections(id) ON DELETE RESTRICT,candidate_id UUID NOT NULL,FOREIGN KEY(candidate_id,election_id) REFERENCES kv_candidates(id,election_id) ON DELETE RESTRICT);"+
-  "CREATE INDEX IF NOT EXISTS kv_ballots_election ON kv_ballots(election_id,candidate_id);"
+  "CREATE INDEX IF NOT EXISTS kv_ballots_election ON kv_ballots(election_id,candidate_id);"+
+  "CREATE TABLE IF NOT EXISTS kv_admin_setup (singleton boolean PRIMARY KEY DEFAULT TRUE CHECK(singleton),admin_user_id UUID NOT NULL REFERENCES kv_users(id),activated_at TIMESTAMPTZ NOT NULL DEFAULT now());"
  );
  dbReady=true;
  console.info("Kennedy Vota: PostgreSQL conectado e estrutura de tabelas verificada.");
@@ -132,6 +133,59 @@ app.post("/api/link-google",limitAuth,sameOrigin,available,logged,wrap(async(req
   if(!result.rowCount)return error(res,409,"Conta já vinculada a outro Google.");
   res.json({ok:true});
  }catch(e){if(e.code==="23505")return error(res,409,"Esta conta Google já está vinculada.");throw e;}
+}));
+// Ativação administrativa de uso único. A autorização deve ser definida exclusivamente
+// pelo proprietário do serviço na variável secreta ADMIN_SETUP_TOKEN do Render.
+// ADMIN_SETUP_EMAIL limita qual endereço poderá receber a função admin.
+const adminSetupLimiter=rateLimit({windowMs:15*60*1000,limit:5,standardHeaders:"draft-7",legacyHeaders:false});
+function setupConfigured(){
+ const email=text(process.env.ADMIN_SETUP_EMAIL,254).toLowerCase();
+ const token=String(process.env.ADMIN_SETUP_TOKEN||"");
+ return validEmail(email)&&token.length>=32?{email,token}:null;
+}
+function matchesCode(received,expected){
+ if(typeof received!=="string"||received.length>256)return false;
+ const left=Buffer.from(received),right=Buffer.from(expected);
+ return left.length===right.length&&timingSafeEqual(left,right);
+}
+app.get("/api/admin/setup-status",available,wrap(async(req,res)=>{
+ const configured=setupConfigured();
+ if(!configured)return res.json({available:false});
+ const {rows}=await db.query("SELECT EXISTS (SELECT 1 FROM kv_admin_setup) AS used");
+ const adminExists=await db.query("SELECT EXISTS (SELECT 1 FROM kv_users WHERE role='admin') AS exists");
+ res.json({available:!rows[0].used&&!adminExists.rows[0].exists});
+}));
+app.post("/api/admin/setup",adminSetupLimiter,sameOrigin,available,wrap(async(req,res)=>{
+ const configured=setupConfigured();
+ const email=text(req.body?.email,254).toLowerCase(),name=text(req.body?.name,120);
+ const password=typeof req.body?.password==="string"?req.body.password:"";
+ const code=req.body?.setupToken;
+ if(!configured||email!==configured.email||!matchesCode(code,configured.token))
+  return error(res,403,"Ativação não autorizada. Confira o e-mail e o código fornecidos pelo administrador do Render.");
+ if(name.length<3||!validEmail(email)||password.length<12||Buffer.byteLength(password)>72)
+  return error(res,400,"Informe nome e senha forte de 12 a 72 bytes.");
+ const hash=await bcrypt.hash(password,12),client=await db.connect();
+ let user;
+ try{
+  await client.query("BEGIN");
+  await client.query("SELECT pg_advisory_xact_lock(849231,712834)");
+  const setupUsed=(await client.query("SELECT EXISTS (SELECT 1 FROM kv_admin_setup) AS used")).rows[0].used;
+  const adminExists=(await client.query("SELECT EXISTS (SELECT 1 FROM kv_users WHERE role='admin') AS found")).rows[0].found;
+  if(setupUsed||adminExists){await client.query("ROLLBACK");return error(res,409,"A conta administrativa já foi ativada.");}
+  const existing=(await client.query("SELECT * FROM kv_users WHERE email=$1 FOR UPDATE",[email])).rows[0];
+  if(existing?.password_hash&&!(await bcrypt.compare(password,existing.password_hash))){
+   await client.query("ROLLBACK");return error(res,403,"Este e-mail já existe com outra senha. Entre na conta existente ou use a senha correta.");
+  }
+  if(existing){
+   user=(await client.query("UPDATE kv_users SET full_name=$1,password_hash=$2,role='admin',approved=true WHERE id=$3 RETURNING *",[name,hash,existing.id])).rows[0];
+  }else{
+   user=(await client.query("INSERT INTO kv_users(id,email,full_name,requested_role,password_hash,role,approved) VALUES ($1,$2,$3,'professor',$4,'admin',true) RETURNING *",[randomUUID(),email,name,hash])).rows[0];
+  }
+  await client.query("INSERT INTO kv_admin_setup(singleton,admin_user_id) VALUES(TRUE,$1)",[user.id]);
+  await client.query("COMMIT");
+ }catch(e){await client.query("ROLLBACK");throw e;}finally{client.release();}
+ setCookie(res,user.id);
+ res.status(201).json({user:jsonUser(user)});
 }));
 app.get("/api/me",available,logged,(req,res)=>res.json({user:jsonUser(req.current)}));
 app.post("/api/logout",sameOrigin,(req,res)=>{clearCookie(res);res.json({ok:true});});
