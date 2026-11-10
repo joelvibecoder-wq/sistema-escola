@@ -275,6 +275,24 @@
  }
  document.querySelectorAll("[data-auth]").forEach(b=>b.onclick=()=>setAuth(b.dataset.auth));
  $("authSwitchButton").onclick=()=>{setAuth(S.authMode==="signup"?"login":"signup");$("authPass").value="";$("authEmail").focus();};
+
+ // Controles de visibilidade: os campos começam ocultos e o botão nunca envia o formulário.
+ document.querySelectorAll("[data-password-toggle]").forEach(button=>{
+  const field=$(button.dataset.passwordToggle);
+  if(!field)return;
+  button.addEventListener("click",()=>{
+   const visible=field.type!=="password";
+   field.type=visible?"password":"text";
+   button.setAttribute("aria-pressed",String(!visible));
+   const action=visible?"Mostrar":"Ocultar";
+   const what=field.id==="setupAdminCode"?"código":"senha";
+   button.setAttribute("aria-label",action+" "+what);
+   button.title=action+" "+what;
+   button.querySelector(".password-eye-open").hidden=!visible;
+   button.querySelector(".password-eye-closed").hidden=visible;
+   field.focus({preventScroll:true});
+  });
+ });
  $("authForm").onsubmit=async event=>{
   event.preventDefault();
   if(S.authMode==="signup"&&$("authRole").value==="admin"){openAdminSetup();return;}
