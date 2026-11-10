@@ -20,9 +20,9 @@
  function byElection(id){return S.elections.find(e=>e.id===id)}
  function byCandidate(id){return S.candidates.find(c=>c.id===id)}
  function options(rows,empty="Nenhuma eleição disponível"){return rows.length?rows.map(e=>'<option value="'+escape(e.id)+'">'+escape(e.title)+'</option>').join(""):'<option value="">'+escape(empty)+'</option>'}
- function theme(dark){document.body.classList.toggle("dark",dark);$("darkSwitch").checked=dark;$("themeBtn").textContent=dark?"☀":"◐";localStorage.setItem("kennedy.theme",dark?"dark":"light");}
+ function theme(dark){document.body.classList.toggle("dark",dark);$("darkSwitch").checked=dark;$("themeBtn").textContent=dark?"☀":"◐";const loginTheme=$("authThemeBtn");if(loginTheme){loginTheme.textContent=dark?"☀ Modo claro":"◐ Modo escuro";loginTheme.setAttribute("aria-pressed",String(dark));}localStorage.setItem("kennedy.theme",dark?"dark":"light");}
  theme(localStorage.getItem("kennedy.theme")==="dark"||(localStorage.getItem("kennedy.theme")===null&&window.matchMedia("(prefers-color-scheme: dark)").matches));
- $("themeBtn").onclick=()=>theme(!document.body.classList.contains("dark"));
+ $("themeBtn").onclick=()=>theme(!document.body.classList.contains("dark"));$("authThemeBtn").onclick=()=>theme(!document.body.classList.contains("dark"));
  $("darkSwitch").onchange=()=>theme($("darkSwitch").checked);
  function go(page){
   if(!S.user?.approved)return;
