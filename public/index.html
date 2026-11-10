@@ -15,6 +15,14 @@
 @media(max-width:420px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.stat strong{font-size:23px}.stat-icon{width:30px;height:30px}.welcome h2{font-size:25px}.panel-head{align-items:flex-start}.candidate-row .actions .mini-btn{padding:6px}.user-chip{border:0;background:transparent}.topbar{gap:8px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 
+/* Microinterações Kennedy Vota: respeitar a preferência de movimento reduzido */
+@media(prefers-reduced-motion:no-preference){
+ .election-card,.candidate-row,.stat,.panel{transition:background-color .2s,border-color .2s,box-shadow .2s,transform .16s}
+ .election-card:hover,.candidate-row:hover{transform:translateY(-1px);box-shadow:0 12px 25px #163b2014}
+ .modal-backdrop.open .modal{animation:kennedyModal .2s ease both}
+ @keyframes kennedyModal{from{opacity:0;transform:translateY(8px) scale(.99)}to{opacity:1;transform:none}}
+}
+body.dark{--green:#8bdfac;--green2:#a7ebbd;--bg:#071b12;--ink:#e7f8eb;--mint:#12432e;--line:#284c38}
 /* Tema escuro e interações harmonizadas com o Eleitoral Digital */
 body{transition:background .22s ease,color .22s ease}button,.panel,.stat,.topbar,.mobile-nav,.field input,.field select,.field textarea,.candidate-row,.election-card{transition:background-color .2s ease,color .2s ease,border-color .2s ease,box-shadow .2s ease,transform .16s ease}
 body.dark{--bg:#101713;--ink:#edf5ef;--muted:#a0b0a5;--line:#2b3a30;--white:#18221b;--mint:#233c2b;--shadow:0 12px 30px #0004;background:var(--bg);color:var(--ink)}
@@ -107,7 +115,7 @@ body.dark .candidate-chart,body.dark .candidate-info{background:#18221b;border-c
 <nav class="mobile-nav" id="mobileNav"><button class="active" data-page="dashboard"><span>▦</span>Início</button><button data-page="elections"><span>◉</span>Eleições</button><button data-page="candidates"><span>♙</span>Candidatos</button><button data-page="vote"><span>✓</span>Votar</button><button data-page="results"><span>▥</span>Apuração</button></nav>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <div class="modal-backdrop" id="voteModal"><div class="modal"><h3>Confirmar voto</h3><p id="modalText">Confira a candidatura antes de confirmar.</p><p><b>Depois de confirmado, o voto não poderá ser alterado neste navegador.</b></p><div class="modal-actions"><button class="btn btn-line" id="modalCancel">Voltar</button><button class="btn btn-primary" id="modalConfirm">Confirmar</button></div></div></div>
-<div class="auth-screen" id="authScreen"><div class="auth-card"><div class="brand" style="padding:0;color:var(--green)"><div class="brandmark" style="background:var(--green);color:white">KP</div><div><strong>Kennedy Vota</strong><small style="color:var(--muted)">Portal escolar</small></div></div><h2>Acesse o portal</h2><p>Entre para continuar no ambiente de demonstração.</p><div class="auth-tabs"><button class="active" data-auth="login">Entrar</button><button data-auth="signup">Criar conta</button></div><form id="authForm"><div class="field" id="authNameWrap" hidden><label for="authName">Nome</label><input id="authName" autocomplete="name"></div><div class="field"><label for="authEmail">E-mail</label><input id="authEmail" type="email" required autocomplete="email" placeholder="voce@exemplo.com"></div><div class="field"><label for="authPass">Senha</label><input id="authPass" type="password" required minlength="6" autocomplete="current-password" placeholder="Sua senha"></div><button class="btn btn-primary" type="submit" id="authSubmit">Entrar</button></form><p class="auth-note">Protótipo de interface: a conta é mantida apenas na sessão deste navegador. Para autenticação real e sincronização entre dispositivos, é necessário conectar Firebase ou outro serviço de backend.</p><button class="btn btn-line" id="skipAuth" style="width:100%;margin-top:10px">Continuar sem conta (teste)</button></div></div>
+<div class="auth-screen" id="authScreen"><div class="auth-card"><div class="brand" style="padding:0;color:var(--green)"><div class="brandmark" style="background:var(--green);color:white">KP</div><div><strong>Kennedy Vota</strong><small style="color:var(--muted)">Portal escolar</small></div></div><h2>Acesse o portal</h2><p>O acesso Google exige configuração do projeto e aprovação da escola. A votação nesta versão continua demonstrativa.</p><div id="googleAuthMount" aria-live="polite"></div><div class="auth-tabs"><button class="active" data-auth="login">Entrar</button><button data-auth="signup">Criar conta</button></div><form id="authForm"><div class="field" id="authNameWrap" hidden><label for="authName">Nome</label><input id="authName" autocomplete="name"></div><div class="field"><label for="authEmail">E-mail</label><input id="authEmail" type="email" required autocomplete="email" placeholder="voce@exemplo.com"></div><div class="field"><label for="authPass">Senha</label><input id="authPass" type="password" required minlength="6" autocomplete="current-password" placeholder="Sua senha"></div><button class="btn btn-primary" type="submit" id="authSubmit">Entrar</button></form><p class="auth-note">Protótipo de interface: a conta é mantida apenas na sessão deste navegador. Para autenticação real e sincronização entre dispositivos, é necessário conectar Firebase ou outro serviço de backend.</p><button class="btn btn-line" id="skipAuth" style="width:100%;margin-top:10px">Continuar sem conta (teste)</button></div></div>
 <script>
 (function(){
 const KEY='kennedyVota.v1';
@@ -193,4 +201,33 @@ $('skipAuth').onclick=()=>{$('authScreen').classList.remove('open');toast('Você
 load();applyTheme();renderElections();renderCandidates();renderVote();renderResults();renderDashboard();setAuth('login');
 })();
 </script>
-</body></html>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script>
+(async function(){
+ const mount=document.getElementById('googleAuthMount');
+ if(!mount)return;
+ try{
+  const response=await fetch('/api/google/config',{cache:'no-store'});
+  if(!response.ok)throw Error('API indisponível');
+  const config=await response.json();
+  if(!config.enabled){mount.textContent='Login Google aguardando configuração do GOOGLE_CLIENT_ID.';return;}
+  const label=document.createElement('label');label.textContent='Vínculo escolar solicitado';
+  const select=document.createElement('select');select.innerHTML='<option>Aluno</option><option>Professor</option>';
+  select.style.cssText='width:100%;padding:10px;margin:8px 0 12px;border-radius:8px';
+  const button=document.createElement('div');mount.append(label,select,button);
+  let attempts=0;
+  const timer=setInterval(()=>{
+   if(!window.google?.accounts?.id){if(++attempts>40){clearInterval(timer);mount.append('Não foi possível carregar o Google.');}return;}
+   clearInterval(timer);
+   google.accounts.id.initialize({client_id:config.clientId,callback:async ({credential})=>{
+    try{
+     const res=await fetch('/api/google/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({credential,requestedRole:select.value})});
+     const data=await res.json();if(!res.ok)throw Error(data.error||'Falha no acesso');
+     mount.textContent=data.status==='pending'?'Identidade Google verificada. Seu cadastro aguarda aprovação da escola.':'Identidade Google verificada. A integração com a votação ainda está em preparação.';
+    }catch(err){mount.textContent=err.message;}
+   }});
+   google.accounts.id.renderButton(button,{theme:'outline',size:'large',text:'continue_with',width:300});
+  },200);
+ }catch{mount.textContent='A autenticação Google requer um servidor configurado. Não utilize a entrada demonstrativa para eleições reais.';}
+})();
+</script></body></html>
