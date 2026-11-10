@@ -1,7 +1,7 @@
 "use strict";
 (()=>{
  const $=id=>document.getElementById(id);
- const S={user:null,elections:[],candidates:[],voted:new Set(),editingElection:null,editingCandidate:null,selectedCandidate:null,authMode:"login",results:null,resultsElection:null,activePage:"dashboard",installPrompt:null,googleClientId:""};
+ const S={user:null,elections:[],candidates:[],voted:new Set(),editingElection:null,editingCandidate:null,selectedCandidate:null,authMode:"login",results:null,resultsElection:null,activePage:"dashboard",installPrompt:null,googleClientId:"",adminSetupAvailable:false};
  const escape=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
  const date=v=>v?new Date(v).toLocaleString("pt-BR",{dateStyle:"short",timeStyle:"short"}):"—";
  const toLocal=v=>{const d=new Date(v);if(!Number.isFinite(+d))return"";return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16)};
@@ -255,6 +255,12 @@
  $("refreshUsers").onclick=renderUsers;
  function setAuth(mode){
   S.authMode=mode;document.querySelectorAll("[data-auth]").forEach(b=>b.classList.toggle("active",b.dataset.auth===mode));
+  // Voltar à entrada convencional ao alternar as abas.
+  $("authForm").hidden=false;
+  $("adminSetupForm").hidden=true;
+  $("showAdminSetup").hidden=false;
+  if($("authRole").value==="admin")$("authRole").value="aluno";
+  if($("googleRole").value==="admin")$("googleRole").value="aluno";
   const signup=mode==="signup";
   $("authNameWrap").hidden=!signup;$("authRoleWrap").hidden=!signup;$("authName").required=signup;
   // O mínimo de 10 caracteres vale somente para SENHAS NOVAS.
@@ -270,7 +276,9 @@
  document.querySelectorAll("[data-auth]").forEach(b=>b.onclick=()=>setAuth(b.dataset.auth));
  $("authSwitchButton").onclick=()=>{setAuth(S.authMode==="signup"?"login":"signup");$("authPass").value="";$("authEmail").focus();};
  $("authForm").onsubmit=async event=>{
-  event.preventDefault();const btn=$("authSubmit");btn.disabled=true;
+  event.preventDefault();
+  if(S.authMode==="signup"&&$("authRole").value==="admin"){openAdminSetup();return;}
+  const btn=$("authSubmit");btn.disabled=true;
   try{
    const input={name:$("authName").value,email:$("authEmail").value,password:$("authPass").value,requestedRole:$("authRole").value};
    const data=await api(S.authMode==="signup"?"/api/register":"/api/login","POST",input);
@@ -322,6 +330,11 @@
      if(S.user){
       await api("/api/link-google","POST",{credential});message("Conta Google vinculada ao seu cadastro.");return;
      }
+     if($("googleRole").value==="admin"){
+      openAdminSetup();
+      message("Administrador: utilize a ativação protegida ou entre com sua conta já existente.");
+      return;
+     }
      const data=await api("/api/google","POST",{credential,requestedRole:$("googleRole").value});
      S.user=data.user;await afterLogin();
     }catch(e){message(e.message);}
@@ -334,18 +347,40 @@
  async function checkAdminSetupAvailability(){
   try{
    const result=await api("/api/admin/setup-status");
-   $("adminSetupEntry").hidden=!result.available;
-  }catch{ $("adminSetupEntry").hidden=true; }
+   S.adminSetupAvailable=!!result.available;
+   $("adminSetupEntry").hidden=!S.adminSetupAvailable;
+  }catch{
+   S.adminSetupAvailable=false;
+   $("adminSetupEntry").hidden=true;
+  }
  }
- $("showAdminSetup").onclick=()=>{
+ function openAdminSetup(){
+  if(!S.adminSetupAvailable){
+   $("authRole").value="aluno";
+   $("googleRole").value="aluno";
+   message("Ativação de administrador indisponível. Se a conta já existe, use a opção Entrar.");
+   return;
+  }
+  const name=$("authName").value,email=$("authEmail").value;
+  setAuth("signup");
+  $("authRole").value="admin";
+  $("authForm").hidden=true;
+  $("adminSetupEntry").hidden=false;
   $("adminSetupForm").hidden=false;
   $("showAdminSetup").hidden=true;
-  $("setupAdminName").focus();
- };
+  if(name&&!$("setupAdminName").value)$("setupAdminName").value=name;
+  if(email&&!$("setupAdminEmail").value)$("setupAdminEmail").value=email;
+  $("adminSetupForm").scrollIntoView({behavior:"smooth",block:"center"});
+  $("setupAdminName").focus({preventScroll:true});
+ }
+ $("authRole").onchange=()=>{if($("authRole").value==="admin")openAdminSetup();};
+ $("googleRole").onchange=()=>{if($("googleRole").value==="admin")openAdminSetup();};
+ $("showAdminSetup").onclick=openAdminSetup;
  $("cancelAdminSetup").onclick=()=>{
   $("adminSetupForm").reset();
-  $("adminSetupForm").hidden=true;
-  $("showAdminSetup").hidden=false;
+  $("authRole").value="aluno";
+  setAuth("login");
+  $("authEmail").focus();
  };
  $("adminSetupForm").onsubmit=async event=>{
   event.preventDefault();
