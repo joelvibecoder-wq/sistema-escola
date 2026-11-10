@@ -512,6 +512,147 @@ body.dark #page-dashboard .activity-item small{color:#adcbb5}
   body.dark #page-dashboard .stat:hover{transform:none}
 }
 
+
+/* Kennedy Vota - Área de votação com tema escuro completo. */
+body.dark #page-vote .section-title{color:#f0fff3}
+body.dark #page-vote .section-sub{color:#b6d4bf}
+body.dark #page-vote > .eyebrow{color:#8be6ab}
+body.dark #page-vote .vote-layout > .panel{
+  background:linear-gradient(155deg,#162e22 0%,#10231a 100%);
+  border:1px solid #345c43;
+  border-radius:21px;
+  box-shadow:0 15px 34px #00000027;
+}
+body.dark #page-vote .panel-head h3{color:#effff2}
+body.dark #page-vote .panel-head p{color:#b0cbb9}
+body.dark #page-vote .field label{color:#d7f0df}
+body.dark #page-vote #voteElection{
+  color:#e9faee;
+  background:#1b3929;
+  border:1px solid #416b50;
+  box-shadow:inset 0 1px 2px #0002;
+}
+body.dark #page-vote #voteElection:focus-visible{
+  outline:3px solid #83e3a5;
+  border-color:#83e3a5;
+}
+body.dark #page-vote #voteElection option{
+  color:#e9faee;
+  background:#193a29;
+}
+body.dark #page-vote .vote-layout > aside.panel{
+  align-self:start;
+  background:linear-gradient(145deg,#1b3a29 0%,#132c20 100%);
+  border:1px solid #457354;
+  border-top:3px solid #8ee6ac;
+  box-shadow:0 16px 36px #00000036;
+}
+body.dark #page-vote .confirm-box{
+  background:linear-gradient(165deg,#214630 0%,#173626 100%);
+  color:#edfff1;
+  border:1px solid #426d50;
+  border-radius:16px;
+  padding:20px;
+  box-shadow:inset 0 1px #ffffff0c;
+}
+body.dark #page-vote .confirm-box h4{
+  color:#f1fff5;
+  font-size:16px;
+  letter-spacing:-.2px;
+  margin-bottom:11px;
+}
+body.dark #page-vote .confirm-box p,
+body.dark #page-vote #voteSummary{
+  color:#c5e2cc;
+  line-height:1.65;
+  font-size:13px;
+}
+body.dark #page-vote .confirm-box .btn-primary{
+  width:100%;
+  background:linear-gradient(110deg,#b7f4c8,#7ee4a4);
+  border:1px solid #d9ffe4;
+  color:#10291b;
+  font-weight:850;
+  box-shadow:0 8px 22px #0003;
+}
+body.dark #page-vote .confirm-box .btn-primary:hover:not(:disabled){
+  background:linear-gradient(110deg,#d2ffdf,#9cf1b8);
+  box-shadow:0 11px 26px #0004;
+}
+body.dark #page-vote .confirm-box .btn-primary:disabled{
+  opacity:.55;
+  background:#47785b;
+  border-color:#5d8e6f;
+  color:#d3eadd;
+  cursor:not-allowed;
+  box-shadow:none;
+}
+body.dark #page-vote .confirm-box .notice{
+  background:#102b1f;
+  color:#b9d5c2;
+  border:1px solid #365b43;
+  border-left:3px solid #7cbd94;
+  border-radius:11px;
+  padding:13px 14px;
+  margin-top:18px;
+  font-size:12px;
+  line-height:1.6;
+}
+body.dark #page-vote .vote-option{
+  background:#1a3627;
+  color:#effff3;
+  border:1px solid #3d654c;
+  border-radius:14px;
+}
+body.dark #page-vote .vote-option b{color:#effff3}
+body.dark #page-vote .vote-option small{color:#b8d2c0}
+body.dark #page-vote .vote-option:hover{
+  background:#244a34;
+  border-color:#79c592;
+}
+body.dark #page-vote .vote-option.selected{
+  background:#28563a;
+  border:2px solid #98ebaf;
+}
+body.dark #page-vote .vote-option .candidate-number{
+  background:#2f6745;
+  color:#d6ffe2;
+}
+body.dark #page-vote .vote-option input{accent-color:#a1efb6}
+body.dark #page-vote .empty{
+  background:#1c3a29;
+  border:1px dashed #4e7d5b;
+  color:#c7e4cf;
+}
+body.dark #page-vote .empty strong{color:#effff3}
+body.dark #voteModal{
+  background:#07140ebd;
+  backdrop-filter:blur(5px);
+}
+body.dark #voteModal .modal{
+  background:linear-gradient(160deg,#1b3b2a,#11291c);
+  border:1px solid #4a7958;
+  color:#effff2;
+  box-shadow:0 25px 80px #0008;
+}
+body.dark #voteModal .modal h3{color:#f2fff4}
+body.dark #voteModal .modal p{color:#bbd6c3}
+body.dark #voteModal .modal p b{color:#e8f9ec}
+body.dark #voteModal .btn-line{
+  background:#244533;
+  border:1px solid #426a50;
+  color:#e1f9e7;
+}
+body.dark #voteModal .btn-primary{
+  background:#9ceab6;
+  color:#102b1c;
+  border:1px solid #cbffdc;
+}
+@media(max-width:760px){
+  body.dark #page-vote .vote-layout > .panel{padding:18px}
+  body.dark #page-vote .confirm-box{padding:16px}
+}
+
 </style>
 </head>
 <body>
