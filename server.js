@@ -1,55 +1,250 @@
 import express from "express";
-import cors from "cors";
 import pg from "pg";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { randomUUID } from "node:crypto";
+import rateLimit from "express-rate-limit";
 import { OAuth2Client } from "google-auth-library";
-const googleVerifier = new OAuth2Client();
-const {Pool}=pg, app=express(), port=process.env.PORT||10000;
-if(!process.env.DATABASE_URL||!process.env.JWT_SECRET) throw new Error("DATABASE_URL e JWT_SECRET são obrigatórios");
-const db=new Pool({connectionString:process.env.DATABASE_URL,ssl:{rejectUnauthorized:false}});
-app.use(cors({origin:true})); app.use(express.json({limit:"100kb"})); app.use(express.static("public"));
-const run=(fn)=>(req,res,next)=>Promise.resolve(fn(req,res,next)).catch(next);
-const auth=(req,res,next)=>{try{req.user=jwt.verify((req.headers.authorization||"").replace(/^Bearer /,""),process.env.JWT_SECRET);next()}catch{res.status(401).json({error:"Sessão inválida ou expirada."})}};
-const token=id=>jwt.sign({id},process.env.JWT_SECRET,{expiresIn:"8h"});
-const user=u=>({id:u.id,fullName:u.full_name,email:u.email,role:u.role,approved:!!u.approved});
-async function init(){await db.query(`
-CREATE TABLE IF NOT EXISTS demo_users(id UUID PRIMARY KEY,full_name TEXT NOT NULL,email TEXT UNIQUE NOT NULL,role TEXT NOT NULL,password_hash TEXT NOT NULL,created_at TIMESTAMPTZ DEFAULT now());
-CREATE TABLE IF NOT EXISTS google_school_users(id UUID PRIMARY KEY,google_sub TEXT UNIQUE NOT NULL,email TEXT NOT NULL,full_name TEXT NOT NULL,requested_role TEXT NOT NULL DEFAULT 'Aluno',approved BOOLEAN NOT NULL DEFAULT FALSE,created_at TIMESTAMPTZ DEFAULT now());
-CREATE TABLE IF NOT EXISTS demo_elections(id UUID PRIMARY KEY,title TEXT NOT NULL,kind TEXT NOT NULL,city TEXT NOT NULL,state TEXT NOT NULL,starts_at TIMESTAMPTZ NOT NULL,ends_at TIMESTAMPTZ NOT NULL,description TEXT DEFAULT '',status TEXT DEFAULT 'Planejada',created_by UUID REFERENCES demo_users(id),created_at TIMESTAMPTZ DEFAULT now());
-CREATE TABLE IF NOT EXISTS demo_candidates(id UUID PRIMARY KEY,election_id UUID REFERENCES demo_elections(id) ON DELETE CASCADE,name TEXT NOT NULL,role TEXT NOT NULL,proposals JSONB DEFAULT '[]');
-CREATE TABLE IF NOT EXISTS demo_votes(id UUID PRIMARY KEY,election_id UUID REFERENCES demo_elections(id) ON DELETE CASCADE,candidate_id UUID REFERENCES demo_candidates(id) ON DELETE CASCADE,voter_id UUID REFERENCES demo_users(id) ON DELETE CASCADE,created_at TIMESTAMPTZ DEFAULT now(),UNIQUE(election_id,voter_id));`)}
+import { randomUUID } from "node:crypto";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-/* Google Identity Services: o ID token é validado no servidor, nunca apenas no navegador.
-   Contas novas ficam pendentes; a aprovação exige uma comissão autenticada (a ser implementada).
-   Este endpoint não concede acesso ao voto do protótipo local. */
-app.get("/api/google/config",(_req,res)=>res.json({clientId:process.env.GOOGLE_CLIENT_ID||null,enabled:!!process.env.GOOGLE_CLIENT_ID}));
-app.post("/api/google/login",run(async(req,res)=>{
- if(!process.env.GOOGLE_CLIENT_ID)return res.status(503).json({error:"Google OAuth ainda não configurado."});
- const credential=String(req.body?.credential||"");
- if(credential.length<100||credential.length>10000)return res.status(400).json({error:"Credencial inválida."});
- let payload;
- try{const ticket=await googleVerifier.verifyIdToken({idToken:credential,audience:process.env.GOOGLE_CLIENT_ID});payload=ticket.getPayload();}
- catch{return res.status(401).json({error:"Não foi possível verificar a conta Google."});}
- if(!payload?.sub||!payload?.email||payload.email_verified!==true)return res.status(403).json({error:"Conta Google sem e-mail verificado."});
- const role=["Professor","Aluno"].includes(req.body?.requestedRole)?req.body.requestedRole:"Aluno";
- const {rows}=await db.query(`INSERT INTO google_school_users(id,google_sub,email,full_name,requested_role)
- VALUES($1,$2,$3,$4,$5) ON CONFLICT(google_sub) DO UPDATE SET email=EXCLUDED.email,full_name=EXCLUDED.full_name
- RETURNING id,email,full_name,requested_role,approved`,[randomUUID(),payload.sub,payload.email.toLowerCase(),String(payload.name||payload.email).slice(0,120),role]);
- const u=rows[0];
- res.json({user:{id:u.id,email:u.email,fullName:u.full_name,requestedRole:u.requested_role,approved:u.approved},status:u.approved?"approved":"pending"});
+const {Pool}=pg;
+const app=express(), port=Number(process.env.PORT||10000);
+const secret=process.env.SESSION_SECRET||"";
+const db=process.env.DATABASE_URL?new Pool({connectionString:process.env.DATABASE_URL,max:6,connectionTimeoutMillis:8000}):null;
+const google=new OAuth2Client();
+let dbReady=false;
+const publicDir=path.join(path.dirname(fileURLToPath(import.meta.url)),"public");
+app.disable("x-powered-by");
+app.set("trust proxy",1);
+app.use((req,res,next)=>{
+  res.setHeader("X-Content-Type-Options","nosniff");
+  res.setHeader("Referrer-Policy","strict-origin-when-cross-origin");
+  res.setHeader("X-Frame-Options","DENY");
+  if(process.env.RENDER||process.env.NODE_ENV==="production")res.setHeader("Strict-Transport-Security","max-age=15552000");
+  if(req.path.startsWith("/api/"))res.setHeader("Cache-Control","no-store");
+  next();
+});
+app.use(express.json({limit:"32kb"}));
+function error(res,status,message){return res.status(status).json({error:message});}
+const wrap=fn=>(req,res,next)=>Promise.resolve(fn(req,res,next)).catch(next);
+const limitAuth=rateLimit({windowMs:15*60*1000,limit:15,standardHeaders:"draft-7",legacyHeaders:false});
+const limitVote=rateLimit({windowMs:60*1000,limit:12,standardHeaders:"draft-7",legacyHeaders:false});
+function text(x,max=160){return String(x??"").trim().slice(0,max);}
+function validEmail(x){return typeof x==="string"&&x.length<=254&&/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x);}
+function jsonUser(u){return {id:u.id,name:u.full_name,email:u.email,requestedRole:u.requested_role,role:u.role,approved:u.approved};}
+const cname="kennedy_session";
+function setCookie(res,id){
+  if(secret.length<32)throw Error("SESSION_SECRET não configurado");
+  const token=jwt.sign({sub:id},secret,{expiresIn:"8h",issuer:"kennedy-vota",audience:"kennedy-web",algorithm:"HS256"});
+  res.setHeader("Set-Cookie",cname+"="+encodeURIComponent(token)+"; Path=/; HttpOnly; SameSite=Lax; Max-Age=28800"+((process.env.RENDER||process.env.NODE_ENV==="production")?"; Secure":""));
+}
+function clearCookie(res){res.setHeader("Set-Cookie",cname+"=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0"+((process.env.RENDER||process.env.NODE_ENV==="production")?"; Secure":""));}
+function getCookie(req){const raw=(req.headers.cookie||"").split(";").map(s=>s.trim()).find(s=>s.startsWith(cname+"="));return raw?decodeURIComponent(raw.slice(cname.length+1)):"";}
+function available(req,res,next){if(!db||!dbReady||secret.length<32)return error(res,503,"Sistema em configuração: conexão segura com o banco indisponível.");next();}
+async function logged(req,res,next){
+ try{
+  const p=jwt.verify(getCookie(req),secret,{algorithms:["HS256"],issuer:"kennedy-vota",audience:"kennedy-web"});
+  const {rows}=await db.query("SELECT id,full_name,email,requested_role,role,approved FROM kv_users WHERE id=$1",[p.sub]);
+  if(!rows.length)return error(res,401,"Sua sessão expirou.");
+  req.current=rows[0];next();
+ }catch{return error(res,401,"Entre na sua conta para continuar.");}
+}
+function admin(req,res,next){if(req.current.approved!==true||req.current.role!=="admin")return error(res,403,"Acesso restrito à administração.");next();}
+function approved(req,res,next){if(!req.current.approved)return error(res,403,"Cadastro aguardando aprovação.");next();}
+function sameOrigin(req,res,next){
+  const origin=req.get("origin");
+  // O cabeçalho customizado impede envios por formulário cross-site (CSRF).
+  if(req.get("x-kennedy-request")!=="1")return error(res,403,"Requisição não autorizada.");
+  if(origin&&origin!==(req.protocol+"://"+req.get("host")))return error(res,403,"Origem não autorizada.");
+  next();
+}
+async function initDb(){
+ if(!db||secret.length<32){console.warn("Aguardando DATABASE_URL e SESSION_SECRET para ativar contas e eleições.");return;}
+ await db.query(
+  "CREATE TABLE IF NOT EXISTS kv_users (id UUID PRIMARY KEY,google_sub TEXT UNIQUE,email TEXT NOT NULL UNIQUE,full_name TEXT NOT NULL,password_hash TEXT,requested_role TEXT NOT NULL CHECK(requested_role IN ('aluno','professor')),role TEXT CHECK(role IN ('aluno','professor','admin')),approved BOOLEAN NOT NULL DEFAULT FALSE,created_at TIMESTAMPTZ NOT NULL DEFAULT now());"+
+  "CREATE TABLE IF NOT EXISTS kv_elections (id UUID PRIMARY KEY,title TEXT NOT NULL,kind TEXT NOT NULL,description TEXT DEFAULT '',status TEXT NOT NULL DEFAULT 'Planejada' CHECK(status IN ('Planejada','Aberta','Encerrada')),starts_at TIMESTAMPTZ NOT NULL,ends_at TIMESTAMPTZ NOT NULL,eligible_roles TEXT[] NOT NULL DEFAULT ARRAY['aluno','professor']::TEXT[],created_by UUID NOT NULL REFERENCES kv_users(id),created_at TIMESTAMPTZ NOT NULL DEFAULT now(),CONSTRAINT kv_dates CHECK(ends_at>starts_at));"+
+  "CREATE TABLE IF NOT EXISTS kv_candidates (id UUID PRIMARY KEY,election_id UUID NOT NULL REFERENCES kv_elections(id) ON DELETE RESTRICT,name TEXT NOT NULL,number TEXT NOT NULL,office TEXT DEFAULT '',proposals TEXT DEFAULT '',UNIQUE(election_id,number),UNIQUE(id,election_id));"+
+  "CREATE TABLE IF NOT EXISTS kv_participation (election_id UUID NOT NULL REFERENCES kv_elections(id) ON DELETE RESTRICT,user_id UUID NOT NULL REFERENCES kv_users(id) ON DELETE RESTRICT,PRIMARY KEY(election_id,user_id));"+
+  "CREATE TABLE IF NOT EXISTS kv_ballots (id UUID PRIMARY KEY,election_id UUID NOT NULL REFERENCES kv_elections(id) ON DELETE RESTRICT,candidate_id UUID NOT NULL,FOREIGN KEY(candidate_id,election_id) REFERENCES kv_candidates(id,election_id) ON DELETE RESTRICT);"+
+  "CREATE INDEX IF NOT EXISTS kv_ballots_election ON kv_ballots(election_id,candidate_id);"
+ );
+ dbReady=true;
+}
+app.get("/api/status",wrap(async(req,res)=>{
+ let ready=false;if(db&&dbReady){try{await db.query("SELECT 1");ready=true;}catch{}}
+ res.status(ready?200:503).json({ready,googleConfigured:!!process.env.GOOGLE_CLIENT_ID,message:ready?"Sistema conectado.":"Aguardando configuração do banco."});
 }));
-
-app.get("/api/health",run(async(_q,s)=>{await db.query("SELECT 1");s.json({status:"ok",mode:"educational-demo"})}));
-app.post("/api/auth/register",run(async(q,s)=>{let {fullName,email,password,role="Participante"}=q.body;fullName=String(fullName||"").trim();email=String(email||"").trim().toLowerCase();password=String(password||"");if(fullName.length<3||fullName.length>120||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||password.length<8||password.length>64)return s.status(400).json({error:"Confira nome, e-mail e senha (8 a 64 caracteres)."});const id=randomUUID(),hash=await bcrypt.hash(password,12);try{const {rows}=await db.query("INSERT INTO demo_users(id,full_name,email,role,password_hash) VALUES($1,$2,$3,$4,$5) RETURNING *",[id,fullName,email,String(role).slice(0,60),hash]);s.status(201).json({user:user(rows[0]),token:token(id)})}catch(e){if(e.code==="23505")return s.status(409).json({error:"E-mail já cadastrado."});throw e}}));
-app.post("/api/auth/login",run(async(q,s)=>{const email=String(q.body.email||"").trim().toLowerCase(),pw=String(q.body.password||"");const {rows}=await db.query("SELECT * FROM demo_users WHERE email=$1",[email]);if(!rows[0]||!(await bcrypt.compare(pw,rows[0].password_hash)))return s.status(401).json({error:"E-mail ou senha incorretos."});s.json({user:user(rows[0]),token:token(rows[0].id)})}));
-app.get("/api/auth/me",auth,run(async(q,s)=>{const {rows}=await db.query("SELECT * FROM demo_users WHERE id=$1",[q.user.id]);if(!rows[0])return s.status(404).json({error:"Conta não encontrada"});s.json({user:user(rows[0])})}));
-app.get("/api/elections",run(async(_q,s)=>{const {rows}=await db.query("SELECT * FROM demo_elections ORDER BY created_at DESC");s.json({elections:rows})}));
-app.post("/api/elections",auth,run(async(q,s)=>{const b=q.body||{};if(!String(b.title||"").trim()||!String(b.city||"").trim()||!b.startsAt||!b.endsAt||new Date(b.endsAt)<=new Date(b.startsAt)||!Array.isArray(b.candidates)||b.candidates.length>100)return s.status(400).json({error:"Dados da eleição inválidos."});const id=randomUUID(),c=await db.connect();try{await c.query("BEGIN");await c.query("INSERT INTO demo_elections(id,title,kind,city,state,starts_at,ends_at,description,created_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)",[id,String(b.title).slice(0,180),String(b.kind||"Simulação").slice(0,100),String(b.city).slice(0,120),String(b.state||"").slice(0,50),b.startsAt,b.endsAt,String(b.description||"").slice(0,4000),q.user.id]);for(const x of b.candidates){if(String(x.name||"").trim())await c.query("INSERT INTO demo_candidates(id,election_id,name,role,proposals) VALUES($1,$2,$3,$4,$5)",[randomUUID(),id,String(x.name).slice(0,160),String(x.role||b.kind||"Candidato").slice(0,100),JSON.stringify(Array.isArray(x.proposals)?x.proposals.slice(0,30):[])])}await c.query("COMMIT");s.status(201).json({id})}catch(e){await c.query("ROLLBACK");throw e}finally{c.release()}}));
-app.patch("/api/elections/:id/status",auth,run(async(q,s)=>{const status=String(q.body.status||"");if(!["Planejada","Ativa","Pausada","Encerrada"].includes(status))return s.status(400).json({error:"Situação inválida"});const r=await db.query("UPDATE demo_elections SET status=$1 WHERE id=$2 AND created_by=$3",[status,q.params.id,q.user.id]);if(!r.rowCount)return s.status(404).json({error:"Eleição não encontrada"});s.json({ok:true})}));
-app.delete("/api/elections/:id",auth,run(async(q,s)=>{const r=await db.query("DELETE FROM demo_elections WHERE id=$1 AND created_by=$2",[q.params.id,q.user.id]);if(!r.rowCount)return s.status(404).json({error:"Eleição não encontrada"});s.json({ok:true})}));
-app.get("/api/elections/:id/results",run(async(q,s)=>{const {rows}=await db.query("SELECT c.id,c.name,c.role,c.proposals,count(v.id)::int votes FROM demo_candidates c LEFT JOIN demo_votes v ON v.candidate_id=c.id WHERE c.election_id=$1 GROUP BY c.id ORDER BY votes DESC,c.name",[q.params.id]);s.json({results:rows})}));
-app.post("/api/elections/:id/vote",auth,run(async(q,s)=>{const c=await db.connect();try{await c.query("BEGIN");const {rows}=await c.query("SELECT * FROM demo_elections WHERE id=$1 FOR UPDATE",[q.params.id]);const e=rows[0],now=new Date();if(!e||e.status!=="Ativa"||now<new Date(e.starts_at)||now>new Date(e.ends_at)){await c.query("ROLLBACK");return s.status(409).json({error:"Eleição não está aberta"})}const cand=await c.query("SELECT id FROM demo_candidates WHERE id=$1 AND election_id=$2",[q.body.candidateId,e.id]);if(!cand.rowCount){await c.query("ROLLBACK");return s.status(400).json({error:"Candidatura inválida"})}await c.query("INSERT INTO demo_votes(id,election_id,candidate_id,voter_id) VALUES($1,$2,$3,$4)",[randomUUID(),e.id,q.body.candidateId,q.user.id]);await c.query("COMMIT");s.status(201).json({ok:true})}catch(e){await c.query("ROLLBACK");if(e.code==="23505")return s.status(409).json({error:"Conta já votou nesta eleição"});throw e}finally{c.release()}}));
-app.use((e,_q,s,_n)=>{console.error(e);s.status(500).json({error:"Falha interna da API"})});
-init().then(()=>app.listen(port,"0.0.0.0",()=>console.log("API demo on",port))).catch(e=>{console.error(e);process.exit(1)});
+app.get("/api/config",(req,res)=>res.json({googleClientId:process.env.GOOGLE_CLIENT_ID||"",siteName:"Kennedy Vota",demo:false}));
+app.post("/api/register",limitAuth,sameOrigin,available,wrap(async(req,res)=>{
+ const name=text(req.body?.name,120),email=text(req.body?.email,254).toLowerCase();
+ const role=text(req.body?.requestedRole,30),password=String(req.body?.password||"");
+ if(name.length<3||!validEmail(email)||!["aluno","professor"].includes(role)||password.length<10||Buffer.byteLength(password)>72)
+  return error(res,400,"Informe nome, e-mail, perfil e senha de 10 a 72 bytes.");
+ const hash=await bcrypt.hash(password,12);
+ try{
+  const r=await db.query("INSERT INTO kv_users(id,email,full_name,requested_role,password_hash) VALUES($1,$2,$3,$4,$5) RETURNING *",[randomUUID(),email,name,role,hash]);
+  setCookie(res,r.rows[0].id);res.status(201).json({user:jsonUser(r.rows[0])});
+ }catch(e){if(e.code==="23505")return error(res,409,"E-mail já cadastrado. Use a opção Entrar.");throw e;}
+}));
+app.post("/api/login",limitAuth,sameOrigin,available,wrap(async(req,res)=>{
+ const email=text(req.body?.email,254).toLowerCase(),password=String(req.body?.password||"");
+ const {rows}=await db.query("SELECT * FROM kv_users WHERE email=$1",[email]);
+ if(!rows[0]?.password_hash||!(await bcrypt.compare(password,rows[0].password_hash)))return error(res,401,"E-mail ou senha inválidos.");
+ setCookie(res,rows[0].id);res.json({user:jsonUser(rows[0])});
+}));
+app.post("/api/google",limitAuth,sameOrigin,available,wrap(async(req,res)=>{
+ if(!process.env.GOOGLE_CLIENT_ID)return error(res,503,"Google ainda não configurado.");
+ const credential=String(req.body?.credential||"");
+ if(credential.length<100||credential.length>10000)return error(res,400,"Credencial inválida.");
+ let profile;
+ try{profile=(await google.verifyIdToken({idToken:credential,audience:process.env.GOOGLE_CLIENT_ID})).getPayload();}
+ catch{return error(res,401,"Falha ao verificar login Google.");}
+ if(!profile?.sub||!validEmail(profile.email)||profile.email_verified!==true)return error(res,403,"Conta Google não verificada.");
+ const email=profile.email.toLowerCase(),name=text(profile.name||email,120);
+ let user=(await db.query("SELECT * FROM kv_users WHERE google_sub=$1",[profile.sub])).rows[0];
+ if(!user){
+  const exists=await db.query("SELECT id FROM kv_users WHERE email=$1",[email]);
+  if(exists.rowCount)return error(res,409,"E-mail já cadastrado com senha. Entre com a senha e vincule o Google em Configurações.");
+  const role=["aluno","professor"].includes(req.body?.requestedRole)?req.body.requestedRole:"aluno";
+  // Bootstrap somente por conta Google verificada, com e-mail configurado no Render.
+  const adminMail=text(process.env.ADMIN_GOOGLE_EMAIL,254).toLowerCase(),isAdmin=!!adminMail&&adminMail===email;
+  try{
+   const r=await db.query("INSERT INTO kv_users(id,google_sub,email,full_name,requested_role,role,approved) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING *",
+    [randomUUID(),profile.sub,email,name,role,isAdmin?"admin":null,isAdmin]);
+   user=r.rows[0];
+  }catch(e){if(e.code==="23505")return error(res,409,"Esta conta já existe. Entre com seu cadastro.");throw e;}
+ }else{
+  const collision=await db.query("SELECT 1 FROM kv_users WHERE email=$1 AND id<>$2",[email,user.id]);
+  if(collision.rowCount)return error(res,409,"O e-mail já pertence a outra conta.");
+  user=(await db.query("UPDATE kv_users SET email=$1,full_name=$2 WHERE id=$3 RETURNING *",[email,name,user.id])).rows[0];
+ }
+ setCookie(res,user.id);res.json({user:jsonUser(user)});
+}));
+app.post("/api/link-google",limitAuth,sameOrigin,available,logged,wrap(async(req,res)=>{
+ if(!process.env.GOOGLE_CLIENT_ID)return error(res,503,"Google não configurado.");
+ let profile;try{profile=(await google.verifyIdToken({idToken:String(req.body?.credential||""),audience:process.env.GOOGLE_CLIENT_ID})).getPayload();}
+ catch{return error(res,401,"Conta Google não validada.");}
+ if(profile?.email_verified!==true||profile.email?.toLowerCase()!==req.current.email)return error(res,403,"Use a mesma conta de e-mail para vincular.");
+ try{
+  const result=await db.query("UPDATE kv_users SET google_sub=$1 WHERE id=$2 AND (google_sub IS NULL OR google_sub=$1) RETURNING id",[profile.sub,req.current.id]);
+  if(!result.rowCount)return error(res,409,"Conta já vinculada a outro Google.");
+  res.json({ok:true});
+ }catch(e){if(e.code==="23505")return error(res,409,"Esta conta Google já está vinculada.");throw e;}
+}));
+app.get("/api/me",available,logged,(req,res)=>res.json({user:jsonUser(req.current)}));
+app.post("/api/logout",sameOrigin,(req,res)=>{clearCookie(res);res.json({ok:true});});
+app.get("/api/users/pending",available,logged,admin,wrap(async(req,res)=>{
+ const {rows}=await db.query("SELECT id,full_name,email,requested_role,created_at FROM kv_users WHERE approved=false ORDER BY created_at LIMIT 200");
+ res.json({users:rows});
+}));
+app.post("/api/users/:id/approve",sameOrigin,available,logged,admin,wrap(async(req,res)=>{
+ const role=text(req.body?.role,30);if(!["aluno","professor"].includes(role))return error(res,400,"Perfil inválido.");
+ const r=await db.query("UPDATE kv_users SET approved=true,role=$1 WHERE id=$2 AND approved=false RETURNING id",[role,req.params.id]);
+ if(!r.rowCount)return error(res,404,"Conta pendente não encontrada.");res.json({ok:true});
+}));
+app.get("/api/elections",available,logged,wrap(async(req,res)=>{
+ const {rows:elections}=await db.query("SELECT id,title,kind,description,status,starts_at,ends_at,eligible_roles FROM kv_elections ORDER BY created_at DESC");
+ const {rows:candidates}=await db.query("SELECT id,election_id,name,number,office,proposals FROM kv_candidates ORDER BY number,name");
+ const {rows:participation}=await db.query("SELECT election_id FROM kv_participation WHERE user_id=$1",[req.current.id]);
+ res.json({elections,candidates,votedElectionIds:participation.map(x=>x.election_id)});
+}));
+function parseElection(input){
+ const title=text(input?.title,180),kind=text(input?.kind,100),description=text(input?.description,3000);
+ const start=new Date(input?.start),end=new Date(input?.end);
+ const roles=Array.isArray(input?.eligibleRoles)?[...new Set(input.eligibleRoles.filter(x=>["aluno","professor"].includes(x)))]:["aluno","professor"];
+ if(!title||!kind||!roles.length||!Number.isFinite(+start)||!Number.isFinite(+end)||end<=start)return null;
+ return {title,kind,description,start,end,roles};
+}
+app.post("/api/elections",sameOrigin,available,logged,admin,wrap(async(req,res)=>{
+ const x=parseElection(req.body);if(!x)return error(res,400,"Dados de eleição inválidos.");
+ const id=randomUUID();await db.query("INSERT INTO kv_elections(id,title,kind,description,starts_at,ends_at,eligible_roles,created_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8)",[id,x.title,x.kind,x.description,x.start,x.end,x.roles,req.current.id]);
+ res.status(201).json({id});
+}));
+app.patch("/api/elections/:id",sameOrigin,available,logged,admin,wrap(async(req,res)=>{
+ const x=parseElection(req.body);if(!x)return error(res,400,"Dados inválidos.");
+ const r=await db.query("UPDATE kv_elections SET title=$1,kind=$2,description=$3,starts_at=$4,ends_at=$5,eligible_roles=$6 WHERE id=$7 AND status='Planejada' RETURNING id",[x.title,x.kind,x.description,x.start,x.end,x.roles,req.params.id]);
+ if(!r.rowCount)return error(res,409,"Só é possível editar eleições planejadas.");res.json({ok:true});
+}));
+app.post("/api/elections/:id/status",sameOrigin,available,logged,admin,wrap(async(req,res)=>{
+ const status=text(req.body?.status,20);
+ if(!["Aberta","Encerrada"].includes(status))return error(res,400,"Situação inválida.");
+ const c=await db.connect();
+ try{
+  await c.query("BEGIN");
+  const e=(await c.query("SELECT * FROM kv_elections WHERE id=$1 FOR UPDATE",[req.params.id])).rows[0];
+  if(!e){await c.query("ROLLBACK");return error(res,404,"Eleição não encontrada.");}
+  if(e.status==="Encerrada"||status==="Aberta"&&e.status!=="Planejada"){await c.query("ROLLBACK");return error(res,409,"Transição de situação não permitida.");}
+  if(status==="Aberta"){
+   const n=(await c.query("SELECT COUNT(*)::int n FROM kv_candidates WHERE election_id=$1",[e.id])).rows[0].n;
+   if(n<2||Date.now()>=+new Date(e.ends_at)){await c.query("ROLLBACK");return error(res,409,"Precisa ter dois candidatos e uma data futura para encerramento.");}
+  }
+  await c.query("UPDATE kv_elections SET status=$1 WHERE id=$2",[status,e.id]);await c.query("COMMIT");res.json({ok:true});
+ }catch(e){await c.query("ROLLBACK");throw e;}finally{c.release();}
+}));
+app.delete("/api/elections/:id",sameOrigin,available,logged,admin,wrap(async(req,res)=>{
+ const c=await db.connect();try{
+  await c.query("BEGIN");
+  const e=(await c.query("SELECT status FROM kv_elections WHERE id=$1 FOR UPDATE",[req.params.id])).rows[0];
+  if(!e||e.status!=="Planejada"){await c.query("ROLLBACK");return error(res,409,"Só é possível excluir eleições planejadas.");}
+  await c.query("DELETE FROM kv_candidates WHERE election_id=$1",[req.params.id]);
+  await c.query("DELETE FROM kv_elections WHERE id=$1",[req.params.id]);await c.query("COMMIT");res.json({ok:true});
+ }catch(e){await c.query("ROLLBACK");throw e;}finally{c.release();}
+}));
+function parseCandidate(input){
+ const name=text(input?.name,160),number=text(input?.number,15),office=text(input?.office,120),proposals=text(input?.proposals,3000);
+ return name&&/^[0-9A-Za-z-]{1,12}$/.test(number)?{name,number,office,proposals}:null;
+}
+app.post("/api/candidates",sameOrigin,available,logged,admin,wrap(async(req,res)=>{
+ const x=parseCandidate(req.body);if(!x)return error(res,400,"Candidatura inválida.");
+ try{
+  const r=await db.query("INSERT INTO kv_candidates(id,election_id,name,number,office,proposals) SELECT $1,id,$3,$4,$5,$6 FROM kv_elections WHERE id=$2 AND status='Planejada' RETURNING id",
+   [randomUUID(),req.body.electionId,x.name,x.number,x.office,x.proposals]);
+  if(!r.rowCount)return error(res,409,"Eleição não aceita candidaturas.");res.status(201).json({id:r.rows[0].id});
+ }catch(e){if(e.code==="23505")return error(res,409,"Número já cadastrado.");throw e;}
+}));
+app.patch("/api/candidates/:id",sameOrigin,available,logged,admin,wrap(async(req,res)=>{
+ const x=parseCandidate(req.body);if(!x)return error(res,400,"Dados inválidos.");
+ try{
+  const r=await db.query("UPDATE kv_candidates c SET name=$1,number=$2,office=$3,proposals=$4 FROM kv_elections e WHERE c.election_id=e.id AND e.status='Planejada' AND c.id=$5 RETURNING c.id",
+   [x.name,x.number,x.office,x.proposals,req.params.id]);
+  if(!r.rowCount)return error(res,409,"Candidatura não pode ser editada.");res.json({ok:true});
+ }catch(e){if(e.code==="23505")return error(res,409,"Número já cadastrado.");throw e;}
+}));
+app.delete("/api/candidates/:id",sameOrigin,available,logged,admin,wrap(async(req,res)=>{
+ const r=await db.query("DELETE FROM kv_candidates c USING kv_elections e WHERE c.election_id=e.id AND e.status='Planejada' AND c.id=$1 RETURNING c.id",[req.params.id]);
+ if(!r.rowCount)return error(res,409,"Candidatura não pode ser excluída.");res.json({ok:true});
+}));
+app.post("/api/elections/:id/vote",limitVote,sameOrigin,available,logged,approved,wrap(async(req,res)=>{
+ const c=await db.connect(),candidateId=text(req.body?.candidateId,50);
+ try{
+  await c.query("BEGIN");
+  const e=(await c.query("SELECT * FROM kv_elections WHERE id=$1 FOR UPDATE",[req.params.id])).rows[0];
+  if(!e||e.status!=="Aberta"||Date.now()<+new Date(e.starts_at)||Date.now()>=+new Date(e.ends_at)){
+   await c.query("ROLLBACK");return error(res,409,"Eleição indisponível.");}
+  if(!e.eligible_roles.includes(req.current.role)){await c.query("ROLLBACK");return error(res,403,"Perfil não habilitado.");}
+  const cand=await c.query("SELECT id FROM kv_candidates WHERE id=$1 AND election_id=$2",[candidateId,e.id]);
+  if(!cand.rowCount){await c.query("ROLLBACK");return error(res,400,"Candidato inválido.");}
+  await c.query("INSERT INTO kv_participation(election_id,user_id) VALUES($1,$2)",[e.id,req.current.id]);
+  await c.query("INSERT INTO kv_ballots(id,election_id,candidate_id) VALUES($1,$2,$3)",[randomUUID(),e.id,candidateId]);
+  await c.query("COMMIT");res.status(201).json({ok:true});
+ }catch(e){
+  await c.query("ROLLBACK");
+  if(e.code==="23505")return error(res,409,"Esta conta já votou nesta eleição.");
+  throw e;
+ }finally{c.release();}
+}));
+app.get("/api/elections/:id/results",available,logged,wrap(async(req,res)=>{
+ const el=(await db.query("SELECT status,ends_at FROM kv_elections WHERE id=$1",[req.params.id])).rows[0];
+ if(!el)return error(res,404,"Eleição não encontrada.");
+ if(el.status!=="Encerrada"&&Date.now()<+new Date(el.ends_at))return error(res,403,"Apuração disponível após o encerramento.");
+ const {rows}=await db.query("SELECT c.id,c.number,c.name,c.office,c.proposals,COUNT(b.id)::int votes FROM kv_candidates c LEFT JOIN kv_ballots b ON b.candidate_id=c.id AND b.election_id=c.election_id WHERE c.election_id=$1 GROUP BY c.id ORDER BY votes DESC,c.number",[req.params.id]);
+ res.json({results:rows,total:rows.reduce((n,r)=>n+r.votes,0)});
+}));
+app.use("/api",(req,res)=>error(res,404,"Endpoint não encontrado."));
+app.use(express.static(publicDir,{index:"index.html",maxAge:0}));
+app.get("*",(req,res)=>res.sendFile(path.join(publicDir,"index.html")));
+app.use((e,req,res,next)=>{console.error("API:",e.code||e.message);return error(res,500,"Falha interna. Verifique os logs do servidor.");});
+initDb().catch(e=>{console.error("Banco não conectado:",e.message);}).finally(()=>{
+ app.listen(port,"0.0.0.0",()=>console.log("Kennedy Vota iniciado na porta",port));
+});
