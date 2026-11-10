@@ -146,6 +146,14 @@ body.dark .auth-visual-caption{color:#e9f9ed;background:transparent}
   .auth-visual-caption strong{font-size:18px}
   .auth-visual-caption span{font-size:12px}
 }
+
+.auth-switch-hint{margin:8px 0 0;color:var(--muted);font-size:13px;text-align:center}
+.auth-text-button{border:0;background:transparent;padding:2px 4px;color:var(--green);font-weight:800;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.auth-text-button:focus-visible{outline:2px solid var(--green);outline-offset:2px;border-radius:3px}
+.auth-pending-actions{display:grid;gap:10px;margin-top:14px}
+.auth-pending-actions .btn{width:100%}
+body.dark .auth-switch-hint{color:#afcfb6}
+body.dark .auth-text-button{color:#a9efbe}
 </style>
 </head>
 <body>
@@ -239,6 +247,10 @@ body.dark .auth-visual-caption{color:#e9f9ed;background:transparent}
       <h2 id="authHeading">Bem-vindo ao Kennedy Vota</h2>
       <p id="authIntro">Entre com sua conta ou crie seu cadastro. O acesso à votação depende de aprovação pela escola.</p>
       <div id="authStatus" class="notice" role="status" hidden></div>
+      <div id="pendingActions" class="auth-pending-actions" hidden>
+        <button class="btn btn-primary" type="button" id="checkApproval">Verificar aprovação do cadastro</button>
+        <p class="auth-note">Você já entrou na conta. A votação será liberada após confirmação da escola.</p>
+      </div>
       <div id="loginControls">
         <div class="auth-tabs"><button class="active" data-auth="login" type="button">Entrar</button><button data-auth="signup" type="button">Criar conta</button></div>
         <form id="authForm">
@@ -248,7 +260,7 @@ body.dark .auth-visual-caption{color:#e9f9ed;background:transparent}
           <div class="field"><label for="authPass">Senha</label><input id="authPass" type="password" required minlength="10" autocomplete="current-password" placeholder="Sua senha (mínimo 10 caracteres)"></div>
           <button class="btn btn-primary" type="submit" id="authSubmit">Entrar</button>
         </form>
-        <div class="auth-divider">ou continuar com Google</div>
+        <div class="auth-divider" id="googleDivider">ou continuar com Google</div>
         <div class="field"><label for="googleRole">Perfil solicitado com Google</label><select id="googleRole"><option value="aluno">Aluno</option><option value="professor">Professor</option></select></div>
         <div id="googleAuthMount" class="google-holder"></div>
         <p class="auth-note">O primeiro acesso cria uma solicitação pendente. Apenas a administração da escola pode aprovar eleitores. O login Google depende da ativação no Google Cloud.</p>
