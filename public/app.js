@@ -25,8 +25,9 @@
  $("themeBtn").onclick=()=>theme(!document.body.classList.contains("dark"));$("authThemeBtn").onclick=()=>theme(!document.body.classList.contains("dark"));
  $("darkSwitch").onchange=()=>theme($("darkSwitch").checked);
  function go(page){
-  if(!S.user?.approved)return;
+  if(!S.user)return;
   if(page==="users"&&!isAdmin())return;
+  if(page==="vote"&&!S.user.approved){message("Seu cadastro precisa da aprovação da escola para votar.");return;}
   const target=$("page-"+page);if(!target)return;
   document.querySelectorAll(".page").forEach(p=>{p.classList.remove("active");p.setAttribute("aria-hidden","true")});
   target.classList.add("active");target.setAttribute("aria-hidden","false");
@@ -56,16 +57,25 @@
   $("authScreen").classList.remove("open");$("appShell").hidden=false;
   $("userName").textContent=S.user.name;
   $("userAvatar").textContent=(S.user.name||"U").charAt(0).toUpperCase();
-  $("userRole").textContent=S.user.role==="admin"?"Administração":S.user.role==="professor"?"Professor":"Aluno";
+  $("userRole").textContent=!S.user.approved?"Aguardando aprovação":S.user.role==="admin"?"Administração":S.user.role==="professor"?"Professor":"Aluno";
   $("adminNav").hidden=!isAdmin();
   $("electionForm").closest(".panel").hidden=!isAdmin();
   $("candidateForm").closest(".panel").hidden=!isAdmin();
+  document.querySelectorAll('[data-page="vote"]').forEach(b=>b.hidden=!S.user.approved);
   document.querySelectorAll('[data-page="elections"],[data-page="candidates"]').forEach(b=>b.hidden=false);
   $("linkGoogleWrap").hidden=!S.googleClientId;
+  $("accountName").textContent=S.user.name;
+  $("accountEmail").textContent=S.user.email;
+  $("accountApproval").textContent=S.user.approved?"Cadastro aprovado":"Cadastro aguardando aprovação";
+  $("accountApproval").className="status"+(S.user.approved?"":" planned");
+  $("accountInfoHelp").textContent=S.user.approved
+    ?"Sua entrada foi confirmada. Consulte as eleições da escola."
+    :"Sua entrada foi confirmada. Você pode consultar o painel, mas somente o administrador poderá liberar seu cadastro para votar.";
+  $("dashboardCheckApproval").hidden=!!S.user.approved;
   renderAll();go(S.activePage==="users"&&!isAdmin()?"dashboard":S.activePage);
  }
  async function refresh(){
-  if(!S.user?.approved)return;
+  if(!S.user)return;
   const data=await api("/api/elections");
   S.elections=data.elections||[];S.candidates=data.candidates||[];S.voted=new Set(data.votedElectionIds||[]);
   renderAll();
@@ -160,6 +170,13 @@
  }
  $("candidateSearch").oninput=renderCandidates;$("candidateFilter").onchange=renderCandidates;
  function renderVote(){
+  if(!S.user?.approved){
+   $("confirmVote").disabled=true;
+   $("voteElection").innerHTML='<option value="">Aguardando aprovação</option>';
+   $("voteCandidates").innerHTML='<div class="empty"><strong>Aguardando aprovação da escola</strong>O administrador precisa autorizar sua conta antes de você votar.</div>';
+   $("voteSummary").textContent="Votação disponível somente após aprovação.";
+   return;
+  }
   const available=S.elections.filter(isOpen).filter(e=>e.eligible_roles.includes(S.user?.role));
   const current=$("voteElection").value;$("voteElection").innerHTML=options(available,"Não há eleições abertas para seu perfil");
   if(available.some(e=>e.id===current))$("voteElection").value=current;
@@ -273,22 +290,29 @@
  }
  $("logoutBtn").onclick=logout;$("authLogout").onclick=logout;
  async function afterLogin(){
-  if(!S.user?.approved){
-   showAuth("Entrada realizada com sucesso. Cadastro pendente de aprovação escolar.");
-   return;
-  }
-  showApp();try{await refresh();}catch(e){message(e.message);}
+  // Depois de confirmar a senha e encontrar a conta, abrir o painel.
+  // O backend continua bloqueando votos sem aprovação escolar.
+  S.activePage="dashboard";
+  showApp();
+  try{
+   await refresh();
+   message(S.user.approved?"Entrada realizada! Bem-vindo ao painel.":"Entrada realizada! Seu cadastro aguarda a aprovação do administrador.");
+  }catch(e){message(e.message);}
  }
- $("checkApproval").onclick=async()=>{
-  const button=$("checkApproval");button.disabled=true;
+ async function checkApproval(){
+  const buttons=[$("checkApproval"),$("dashboardCheckApproval")];
+  buttons.forEach(b=>b.disabled=true);
   try{
    const result=await api("/api/me");
    S.user=result.user;
-   if(S.user.approved){await afterLogin();message("Cadastro aprovado! Bem-vindo ao Kennedy Vota.");}
-   else showAuth("Seu cadastro ainda está em análise. Não é necessário fazer outro.");
+   showApp();
+   await refresh();
+   message(S.user.approved?"Cadastro aprovado!":"Cadastro ainda pendente. Você pode consultar o painel.");
   }catch(e){message(e.message);}
-  finally{button.disabled=false;}
- };
+  finally{buttons.forEach(b=>b.disabled=false);}
+ }
+ $("checkApproval").onclick=checkApproval;
+ $("dashboardCheckApproval").onclick=checkApproval;
  function loadGoogle(clientId){
   const start=Date.now();const interval=setInterval(()=>{
    if(!window.google?.accounts?.id){if(Date.now()-start>12000){clearInterval(interval);$("googleAuthMount").textContent="Não foi possível carregar o login Google."; }return;}
