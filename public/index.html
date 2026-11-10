@@ -154,6 +154,15 @@ body.dark .auth-visual-caption{color:#e9f9ed;background:transparent}
 .auth-pending-actions .btn{width:100%}
 body.dark .auth-switch-hint{color:#afcfb6}
 body.dark .auth-text-button{color:#a9efbe}
+
+.account-overview{margin-bottom:22px;padding:22px}
+.account-overview-heading{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px}
+.account-overview h2{font-size:clamp(19px,2.4vw,26px);margin:5px 0 7px}
+.account-overview p{color:var(--muted);font-size:13px;overflow-wrap:anywhere}
+.account-overview #accountInfoHelp{margin:10px 0 14px}
+.account-overview #dashboardCheckApproval{margin-top:4px}
+body.dark .account-overview{background:#102b1d}
+@media(max-width:560px){.account-overview-heading{display:block}.account-overview #accountApproval{margin-top:10px}}
 </style>
 </head>
 <body>
@@ -177,6 +186,15 @@ body.dark .auth-text-button{color:#a9efbe}
 </header>
 <main class="content">
 <section class="page active" id="page-dashboard">
+  <section class="panel account-overview" aria-label="Informações da conta">
+    <div class="account-overview-heading">
+      <div><div class="eyebrow">ENTRADA CONFIRMADA</div><h2>Bem-vindo ao seu painel, <span id="accountName">usuário</span>!</h2>
+      <p>Conta cadastrada: <strong id="accountEmail"></strong></p></div>
+      <span id="accountApproval" class="status planned">Aguardando aprovação</span>
+    </div>
+    <p id="accountInfoHelp"></p>
+    <button id="dashboardCheckApproval" class="btn btn-soft" type="button">Verificar minha aprovação</button>
+  </section>
   <div class="welcome"><div><div class="eyebrow">PORTAL ESCOLAR · KENNEDY</div><h2>Uma gestão de eleições<br>mais simples e organizada.</h2><p>Acompanhe os processos eleitorais, gerencie candidaturas e consulte os resultados em um só lugar.</p></div><button class="btn btn-primary" onclick="go('elections')">＋ Criar eleição</button></div>
   <div class="grid stats">
     <div class="stat"><div class="stat-head">Eleições cadastradas <span class="stat-icon">◉</span></div><strong id="statElections">0</strong><small>Processos criados no portal</small></div>
