@@ -170,6 +170,9 @@ body.dark .account-overview{background:#102b1d}
 .admin-setup-form .field{margin:0}
 .admin-setup-form .btn{width:100%}
 body.dark .admin-setup-entry{border-color:#376247}
+/* Mostrar mensagens de sucesso e erro acima do modal de entrada. */
+.toast{z-index:100!important}
+.auth-card .auth-switch-hint{margin:10px 0 0}
 </style>
 </head>
 <body>
@@ -283,7 +286,8 @@ body.dark .admin-setup-entry{border-color:#376247}
           <div class="field" id="authRoleWrap" hidden><label for="authRole">Vínculo com a escola</label><select id="authRole"><option value="aluno">Aluno</option><option value="professor">Professor</option><option value="admin">Administrador (acesso protegido)</option></select></div>
           <div class="field"><label for="authEmail">E-mail</label><input id="authEmail" type="email" required autocomplete="email" placeholder="seuemail@exemplo.com"></div>
           <div class="field"><label for="authPass">Senha</label><input id="authPass" type="password" required minlength="10" autocomplete="current-password" placeholder="Sua senha (mínimo 10 caracteres)"></div>
-          <button class="btn btn-primary" type="submit" id="authSubmit">Entrar</button>
+          <button class="btn btn-primary" type="submit" id="authSubmit">Entrar na minha conta</button>
+          <p id="authSwitchHint" class="auth-switch-hint"><span id="authSwitchText">Ainda não tem conta?</span> <button type="button" id="authSwitchButton" class="auth-text-button">Criar cadastro</button></p>
         </form>
         <div class="auth-divider" id="googleDivider">ou continuar com Google</div>
         <div class="field"><label for="googleRole">Perfil solicitado com Google</label><select id="googleRole"><option value="aluno">Aluno</option><option value="professor">Professor</option><option value="admin">Administrador (ativação protegida)</option></select></div>
