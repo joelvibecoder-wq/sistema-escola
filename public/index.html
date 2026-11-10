@@ -75,47 +75,76 @@ body.dark .auth-card .field label{color:#d6ecd9}
 @media(max-width:760px){.auth-visual{display:block;min-height:180px;height:180px}.auth-visual-caption{padding:28px 16px 14px}.auth-visual-caption strong{font-size:18px}.auth-visual-caption span{font-size:11px}}
 @media(prefers-reduced-motion:reduce){.auth-theme-button{transition:none}}
 
-/* Mostrar a pixel art inteira, sem recorte, ao lado do formulário. */
+/* Destaque da escola em pixel art: imagem inteira, nítida e sem recorte. */
 .auth-visual{
   display:flex;
   flex-direction:column;
-  justify-content:center;
   align-items:center;
-  gap:14px;
-  min-height:480px;
-  padding:22px;
-  background:#e6f3e9;
+  justify-content:center;
+  gap:18px;
+  min-height:510px;
+  padding:28px 22px;
+  background:linear-gradient(180deg,#eef8f0 0%,#dbeedf 100%);
+  border-left:1px solid #cfe3d6;
 }
 .auth-visual img{
+  display:block;
   position:static;
   inset:auto;
-  display:block;
-  width:92%;
+  width:100%;
   height:auto;
-  max-width:500px;
-  max-height:340px;
+  max-width:560px;
+  max-height:390px;
   object-fit:contain;
-  border-radius:10px;
   image-rendering:pixelated;
+  border:3px solid #9acbad;
+  border-radius:14px;
+  padding:8px;
+  background:#ffffff;
+  box-shadow:0 14px 36px rgba(16,75,46,.2);
 }
 .auth-visual-caption{
   position:static;
   inset:auto;
   width:100%;
-  padding:0 6px;
+  padding:0 8px;
   background:transparent;
-  color:#104b2e;
   text-align:center;
   justify-items:center;
+  color:#104b2e;
+  text-shadow:none;
 }
-.auth-visual-caption strong{font-size:21px}
-body.dark .auth-visual{background:#0e3020}
-body.dark .auth-visual-caption{background:transparent;color:#e9f9ed}
+.auth-visual-caption strong{font-size:22px}
+.auth-visual-caption span{display:block;margin-top:5px;font-size:13px}
+body.dark .auth-visual{
+  background:linear-gradient(180deg,#102a1b 0%,#143e29 100%);
+  border-left-color:#305e41;
+}
+body.dark .auth-visual img{
+  background:#193b27;
+  border-color:#66b787;
+  box-shadow:0 14px 32px rgba(0,0,0,.35);
+}
+body.dark .auth-visual-caption{color:#e9f9ed;background:transparent}
 @media(max-width:760px){
-  .auth-visual{display:flex;height:auto;min-height:0;padding:14px 14px 18px;gap:9px}
-  .auth-visual img{width:90%;max-height:190px;height:auto;object-fit:contain}
+  .auth-visual{
+    display:flex;
+    height:auto;
+    min-height:0;
+    padding:16px;
+    gap:12px;
+  }
+  .auth-visual img{
+    width:100%;
+    height:auto;
+    max-width:440px;
+    max-height:240px;
+    padding:6px;
+    object-fit:contain;
+  }
   .auth-visual-caption{padding:0 4px}
-  .auth-visual-caption strong{font-size:17px}
+  .auth-visual-caption strong{font-size:18px}
+  .auth-visual-caption span{font-size:12px}
 }
 </style>
 </head>
