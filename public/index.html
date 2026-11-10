@@ -180,33 +180,4 @@ body.dark .auth-visual-caption{background:linear-gradient(transparent,#071b12ee)
 </div>
 <script src="/app.js" defer></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
-<script src="https://accounts.google.com/gsi/client" async defer></script>
-<script>
-(async function(){
- const mount=document.getElementById('googleAuthMount');
- if(!mount)return;
- try{
-  const response=await fetch('/api/google/config',{cache:'no-store'});
-  if(!response.ok)throw Error('API indisponível');
-  const config=await response.json();
-  if(!config.enabled){mount.textContent='Login Google aguardando configuração do GOOGLE_CLIENT_ID.';return;}
-  const label=document.createElement('label');label.textContent='Vínculo escolar solicitado';
-  const select=document.createElement('select');select.innerHTML='<option>Aluno</option><option>Professor</option>';
-  select.style.cssText='width:100%;padding:10px;margin:8px 0 12px;border-radius:8px';
-  const button=document.createElement('div');mount.append(label,select,button);
-  let attempts=0;
-  const timer=setInterval(()=>{
-   if(!window.google?.accounts?.id){if(++attempts>40){clearInterval(timer);mount.append('Não foi possível carregar o Google.');}return;}
-   clearInterval(timer);
-   google.accounts.id.initialize({client_id:config.clientId,callback:async ({credential})=>{
-    try{
-     const res=await fetch('/api/google/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({credential,requestedRole:select.value})});
-     const data=await res.json();if(!res.ok)throw Error(data.error||'Falha no acesso');
-     mount.textContent=data.status==='pending'?'Identidade Google verificada. Seu cadastro aguarda aprovação da escola.':'Identidade Google verificada. A integração com a votação ainda está em preparação.';
-    }catch(err){mount.textContent=err.message;}
-   }});
-   google.accounts.id.renderButton(button,{theme:'outline',size:'large',text:'continue_with',width:300});
-  },200);
- }catch{mount.textContent='A autenticação Google requer um servidor configurado. Não utilize a entrada demonstrativa para eleições reais.';}
-})();
-</script></body></html>
+</body></html>
