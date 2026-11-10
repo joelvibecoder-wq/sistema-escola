@@ -4,6 +4,8 @@ import pg from "pg";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { randomUUID } from "node:crypto";
+import { OAuth2Client } from "google-auth-library";
+const googleVerifier = new OAuth2Client();
 const {Pool}=pg, app=express(), port=process.env.PORT||10000;
 if(!process.env.DATABASE_URL||!process.env.JWT_SECRET) throw new Error("DATABASE_URL e JWT_SECRET são obrigatórios");
 const db=new Pool({connectionString:process.env.DATABASE_URL,ssl:{rejectUnauthorized:false}});
@@ -11,12 +13,34 @@ app.use(cors({origin:true})); app.use(express.json({limit:"100kb"})); app.use(ex
 const run=(fn)=>(req,res,next)=>Promise.resolve(fn(req,res,next)).catch(next);
 const auth=(req,res,next)=>{try{req.user=jwt.verify((req.headers.authorization||"").replace(/^Bearer /,""),process.env.JWT_SECRET);next()}catch{res.status(401).json({error:"Sessão inválida ou expirada."})}};
 const token=id=>jwt.sign({id},process.env.JWT_SECRET,{expiresIn:"8h"});
-const user=u=>({id:u.id,fullName:u.full_name,email:u.email,role:u.role});
+const user=u=>({id:u.id,fullName:u.full_name,email:u.email,role:u.role,approved:!!u.approved});
 async function init(){await db.query(`
 CREATE TABLE IF NOT EXISTS demo_users(id UUID PRIMARY KEY,full_name TEXT NOT NULL,email TEXT UNIQUE NOT NULL,role TEXT NOT NULL,password_hash TEXT NOT NULL,created_at TIMESTAMPTZ DEFAULT now());
+CREATE TABLE IF NOT EXISTS google_school_users(id UUID PRIMARY KEY,google_sub TEXT UNIQUE NOT NULL,email TEXT NOT NULL,full_name TEXT NOT NULL,requested_role TEXT NOT NULL DEFAULT 'Aluno',approved BOOLEAN NOT NULL DEFAULT FALSE,created_at TIMESTAMPTZ DEFAULT now());
 CREATE TABLE IF NOT EXISTS demo_elections(id UUID PRIMARY KEY,title TEXT NOT NULL,kind TEXT NOT NULL,city TEXT NOT NULL,state TEXT NOT NULL,starts_at TIMESTAMPTZ NOT NULL,ends_at TIMESTAMPTZ NOT NULL,description TEXT DEFAULT '',status TEXT DEFAULT 'Planejada',created_by UUID REFERENCES demo_users(id),created_at TIMESTAMPTZ DEFAULT now());
 CREATE TABLE IF NOT EXISTS demo_candidates(id UUID PRIMARY KEY,election_id UUID REFERENCES demo_elections(id) ON DELETE CASCADE,name TEXT NOT NULL,role TEXT NOT NULL,proposals JSONB DEFAULT '[]');
 CREATE TABLE IF NOT EXISTS demo_votes(id UUID PRIMARY KEY,election_id UUID REFERENCES demo_elections(id) ON DELETE CASCADE,candidate_id UUID REFERENCES demo_candidates(id) ON DELETE CASCADE,voter_id UUID REFERENCES demo_users(id) ON DELETE CASCADE,created_at TIMESTAMPTZ DEFAULT now(),UNIQUE(election_id,voter_id));`)}
+
+/* Google Identity Services: o ID token é validado no servidor, nunca apenas no navegador.
+   Contas novas ficam pendentes; a aprovação exige uma comissão autenticada (a ser implementada).
+   Este endpoint não concede acesso ao voto do protótipo local. */
+app.get("/api/google/config",(_req,res)=>res.json({clientId:process.env.GOOGLE_CLIENT_ID||null,enabled:!!process.env.GOOGLE_CLIENT_ID}));
+app.post("/api/google/login",run(async(req,res)=>{
+ if(!process.env.GOOGLE_CLIENT_ID)return res.status(503).json({error:"Google OAuth ainda não configurado."});
+ const credential=String(req.body?.credential||"");
+ if(credential.length<100||credential.length>10000)return res.status(400).json({error:"Credencial inválida."});
+ let payload;
+ try{const ticket=await googleVerifier.verifyIdToken({idToken:credential,audience:process.env.GOOGLE_CLIENT_ID});payload=ticket.getPayload();}
+ catch{return res.status(401).json({error:"Não foi possível verificar a conta Google."});}
+ if(!payload?.sub||!payload?.email||payload.email_verified!==true)return res.status(403).json({error:"Conta Google sem e-mail verificado."});
+ const role=["Professor","Aluno"].includes(req.body?.requestedRole)?req.body.requestedRole:"Aluno";
+ const {rows}=await db.query(`INSERT INTO google_school_users(id,google_sub,email,full_name,requested_role)
+ VALUES($1,$2,$3,$4,$5) ON CONFLICT(google_sub) DO UPDATE SET email=EXCLUDED.email,full_name=EXCLUDED.full_name
+ RETURNING id,email,full_name,requested_role,approved`,[randomUUID(),payload.sub,payload.email.toLowerCase(),String(payload.name||payload.email).slice(0,120),role]);
+ const u=rows[0];
+ res.json({user:{id:u.id,email:u.email,fullName:u.full_name,requestedRole:u.requested_role,approved:u.approved},status:u.approved?"approved":"pending"});
+}));
+
 app.get("/api/health",run(async(_q,s)=>{await db.query("SELECT 1");s.json({status:"ok",mode:"educational-demo"})}));
 app.post("/api/auth/register",run(async(q,s)=>{let {fullName,email,password,role="Participante"}=q.body;fullName=String(fullName||"").trim();email=String(email||"").trim().toLowerCase();password=String(password||"");if(fullName.length<3||fullName.length>120||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||password.length<8||password.length>64)return s.status(400).json({error:"Confira nome, e-mail e senha (8 a 64 caracteres)."});const id=randomUUID(),hash=await bcrypt.hash(password,12);try{const {rows}=await db.query("INSERT INTO demo_users(id,full_name,email,role,password_hash) VALUES($1,$2,$3,$4,$5) RETURNING *",[id,fullName,email,String(role).slice(0,60),hash]);s.status(201).json({user:user(rows[0]),token:token(id)})}catch(e){if(e.code==="23505")return s.status(409).json({error:"E-mail já cadastrado."});throw e}}));
 app.post("/api/auth/login",run(async(q,s)=>{const email=String(q.body.email||"").trim().toLowerCase(),pw=String(q.body.password||"");const {rows}=await db.query("SELECT * FROM demo_users WHERE email=$1",[email]);if(!rows[0]||!(await bcrypt.compare(pw,rows[0].password_hash)))return s.status(401).json({error:"E-mail ou senha incorretos."});s.json({user:user(rows[0]),token:token(rows[0].id)})}));
