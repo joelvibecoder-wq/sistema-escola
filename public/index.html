@@ -60,6 +60,20 @@ body.dark .auth-card .field select{background:#071b12}
 body.dark .auth-visual-caption{background:linear-gradient(transparent,#071b12ee)}
 @media(max-width:760px){.auth-expanded{display:block;max-height:none;width:min(450px,100%)}.auth-visual{display:none}.auth-main{padding:23px}.auth-screen.open{align-items:flex-start}.auth-screen{padding:15px}}
 @media(prefers-reduced-motion:reduce){.auth-expanded,.auth-visual{animation:none!important}}
+/* Modo claro/escuro acessível já na tela de entrada */
+.auth-theme-row{display:flex;justify-content:flex-end;align-items:center;margin:-7px 0 10px}
+.auth-theme-button{padding:8px 12px;border-radius:999px;border:1px solid var(--line);background:var(--mint);color:var(--green);font-size:12px;font-weight:750;transition:background-color .22s,color .22s,transform .16s}
+.auth-theme-button:hover{transform:translateY(-1px);box-shadow:0 4px 12px #142a1a22}
+.auth-visual img{image-rendering:pixelated;image-rendering:crisp-edges;object-fit:cover}
+body.dark .auth-theme-button{background:#12432e;border-color:#3f7e57;color:#a9f5bf}
+body.dark .auth-main{background:#0d2016;color:#e2f6e8}
+body.dark .auth-card input{background:#081a11;color:#ebf9ef;border-color:#375344}
+body.dark .auth-card .auth-tabs{background:#0d2c1e}
+body.dark .auth-card .auth-note{color:#afd1b9}
+body.dark .auth-card .brand small{color:#b8d7c0!important}
+body.dark .auth-card .field label{color:#d6ecd9}
+@media(max-width:760px){.auth-visual{display:block;min-height:180px;height:180px}.auth-visual-caption{padding:28px 16px 14px}.auth-visual-caption strong{font-size:18px}.auth-visual-caption span{font-size:11px}}
+@media(prefers-reduced-motion:reduce){.auth-theme-button{transition:none}}
 </style>
 </head>
 <body>
@@ -148,6 +162,7 @@ body.dark .auth-visual-caption{background:linear-gradient(transparent,#071b12ee)
 <div class="auth-screen open" id="authScreen">
   <div class="auth-card auth-expanded">
     <div class="auth-main">
+      <div class="auth-theme-row"><button id="authThemeBtn" type="button" class="auth-theme-button" aria-label="Alternar modo claro ou escuro" aria-pressed="false">◐ Modo escuro</button></div>
       <div class="brand" style="padding:0;color:var(--green)"><div class="brandmark" style="background:var(--green);color:white">KV</div><div><strong>Kennedy Vota</strong><small style="color:var(--muted)">Portal eleitoral escolar</small></div></div>
       <h2 id="authHeading">Bem-vindo ao Kennedy Vota</h2>
       <p id="authIntro">Entre com sua conta ou crie seu cadastro. O acesso à votação depende de aprovação pela escola.</p>
@@ -173,7 +188,7 @@ body.dark .auth-visual-caption{background:linear-gradient(transparent,#071b12ee)
       <p id="installHelp" class="auth-note" hidden></p>
     </div>
     <div class="auth-visual">
-      <img src="/school-illustration.svg" alt="Ilustração inspirada em uma escola pública de Ponta Grossa, com paredes verdes e pátio arborizado">
+      <img src="/kennedy-escola-pixel-art.png" alt="Ilustração em pixel art da fachada verde de uma escola, inspirada no Colégio Estadual Presidente Kennedy">
       <div class="auth-visual-caption"><strong>Um voto, uma voz.</strong><span>Participação e responsabilidade na comunidade escolar.</span></div>
     </div>
   </div>
