@@ -280,20 +280,20 @@ body.dark .admin-setup-entry{border-color:#376247}
         <div class="auth-tabs"><button class="active" data-auth="login" type="button">Entrar</button><button data-auth="signup" type="button">Criar conta</button></div>
         <form id="authForm">
           <div class="field" id="authNameWrap" hidden><label for="authName">Nome completo</label><input id="authName" autocomplete="name"></div>
-          <div class="field" id="authRoleWrap" hidden><label for="authRole">Vínculo com a escola</label><select id="authRole"><option value="aluno">Aluno</option><option value="professor">Professor</option></select></div>
+          <div class="field" id="authRoleWrap" hidden><label for="authRole">Vínculo com a escola</label><select id="authRole"><option value="aluno">Aluno</option><option value="professor">Professor</option><option value="admin">Administrador (acesso protegido)</option></select></div>
           <div class="field"><label for="authEmail">E-mail</label><input id="authEmail" type="email" required autocomplete="email" placeholder="seuemail@exemplo.com"></div>
           <div class="field"><label for="authPass">Senha</label><input id="authPass" type="password" required minlength="10" autocomplete="current-password" placeholder="Sua senha (mínimo 10 caracteres)"></div>
           <button class="btn btn-primary" type="submit" id="authSubmit">Entrar</button>
         </form>
         <div class="auth-divider" id="googleDivider">ou continuar com Google</div>
-        <div class="field"><label for="googleRole">Perfil solicitado com Google</label><select id="googleRole"><option value="aluno">Aluno</option><option value="professor">Professor</option></select></div>
+        <div class="field"><label for="googleRole">Perfil solicitado com Google</label><select id="googleRole"><option value="aluno">Aluno</option><option value="professor">Professor</option><option value="admin">Administrador (ativação protegida)</option></select></div>
         <div id="googleAuthMount" class="google-holder"></div>
         <p class="auth-note">O primeiro acesso cria uma solicitação pendente. Apenas a administração da escola pode aprovar eleitores. O login Google depende da ativação no Google Cloud.</p>
         <div id="adminSetupEntry" class="admin-setup-entry" hidden>
           <button type="button" id="showAdminSetup" class="auth-text-button">Sou responsável pela escola: ativar administração</button>
           <form id="adminSetupForm" class="admin-setup-form" hidden>
             <h3>Ativação segura da administração</h3>
-            <p class="auth-note">Disponível apenas com a autorização exclusiva configurada no Render. Use seu e-mail e escolha uma senha pessoal aqui no site.</p>
+            <p class="auth-note">Para administrar as eleições, utilize o e-mail previamente autorizado e o código de ativação configurado no Render. Sua senha pessoal é criada somente aqui, no site.</p>
             <div class="field"><label for="setupAdminName">Nome do administrador</label><input id="setupAdminName" autocomplete="name" required minlength="3" maxlength="120"></div>
             <div class="field"><label for="setupAdminEmail">E-mail administrativo autorizado</label><input id="setupAdminEmail" type="email" autocomplete="email" required></div>
             <div class="field"><label for="setupAdminPassword">Senha administrativa (mínimo 12 caracteres)</label><input id="setupAdminPassword" type="password" autocomplete="new-password" required minlength="12"></div>
