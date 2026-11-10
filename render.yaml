@@ -1,26 +1,22 @@
+# Kennedy Vota — referencia ao PostgreSQL JA EXISTENTE, sem incluir ou criar outro banco.
+# Adotado apenas pelo serviço kennedy-vota-app; o site estatico anterior permanece intacto.
 services:
   - type: web
-    name: eleicao-escolar-inteligente-api
+    name: kennedy-vota-app
     runtime: node
     plan: free
     region: ohio
-    buildCommand: npm install
+    repo: https://github.com/joelvibecoder-wq/sistema-escola
+    branch: feature/google-login-animacoes-20261109
+    buildCommand: npm install && npm run build
     startCommand: npm start
-    healthCheckPath: /api/health
+    healthCheckPath: /api/status
     envVars:
-      - key: DATABASE_URL
-        fromDatabase:
-          name: eleicao-escolar-db
-          property: connectionString
-      - key: JWT_SECRET
-        sync: false
       - key: NODE_ENV
         value: production
-
-databases:
-  - name: eleicao-escolar-db
-    databaseName: eleicao_escolar_db
-    user: eleicao_escolar_db_user
-    plan: free
-    region: ohio
-    postgresMajorVersion: 16
+      - key: DATABASE_URL
+        fromDatabase:
+          name: kennedy-vota-db
+          property: connectionString
+# SESSION_SECRET preexistente nao deve ser sobrescrito.
+# GOOGLE_CLIENT_ID e ADMIN_GOOGLE_EMAIL exigem configuracao de identidade Google.
