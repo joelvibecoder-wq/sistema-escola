@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1000" role="img" aria-label="Ilustração de escola com fachada verde e pátio arborizado">
+<defs><linearGradient id="sky" x2="0" y2="1"><stop stop-color="#c6eaff"/><stop offset="1" stop-color="#effaf1"/></linearGradient><linearGradient id="wall" x2="0" y2="1"><stop stop-color="#d5f49c"/><stop offset="1" stop-color="#94ca78"/></linearGradient></defs>
+<rect width="1200" height="1000" fill="url(#sky)"/><circle cx="994" cy="124" r="67" fill="#fff4ba"/><path fill="#f1f5e8" d="M0 690Q320 620 590 686T1200 685v315H0Z"/>
+<path fill="#5f9e5e" d="M0 720Q275 650 565 730T1200 716v284H0Z"/>
+<rect x="180" y="320" width="940" height="490" rx="9" fill="url(#wall)"/>
+<rect x="180" y="570" width="940" height="240" fill="#11643c"/>
+<path d="M147 320h998l-90-75H232Z" fill="#edf9ed" stroke="#3d8454" stroke-width="8"/>
+<rect x="268" y="367" width="768" height="100" fill="#edfff0"/>
+<rect x="300" y="393" width="145" height="73" fill="#27684c"/><rect x="483" y="393" width="145" height="73" fill="#27684c"/><rect x="670" y="393" width="145" height="73" fill="#27684c"/><rect x="852" y="393" width="145" height="73" fill="#27684c"/>
+<path d="M0 898 568 558h200l432 340v102H0Z" fill="#c9d0c5"/><path d="M485 1000 600 585h80l115 415" fill="#e0e8dc"/>
+<rect x="543" y="535" width="199" height="276" fill="#0b4a31"/>
+<rect x="561" y="555" width="160" height="240" fill="#d1edd9"/>
+<path d="M640 555v240M561 670h160" stroke="#18593a" stroke-width="12"/>
+<rect x="220" y="510" width="298" height="301" fill="#15734b" opacity=".4"/><rect x="260" y="520" width="250" height="291" fill="#e7f2e5"/>
+<path d="M284 812V522M412 812V522" stroke="#398c5b" stroke-width="14"/>
+<rect x="135" y="767" width="970" height="30" rx="8" fill="#d4f0bc"/>
+<g><path d="M89 830V345" stroke="#73533e" stroke-width="45"/><circle cx="103" cy="266" r="172" fill="#438b54"/><circle cx="235" cy="260" r="115" fill="#4e9b60"/><circle cx="25" cy="185" r="140" fill="#3a8351"/></g>
+<g><path d="M1080 825V598" stroke="#694c3c" stroke-width="22"/><circle cx="1062" cy="574" r="91" fill="#438b54"/><circle cx="1135" cy="566" r="70" fill="#5fa765"/></g>
+<g fill="#f5b5b1"><circle cx="70" cy="891" r="17"/><circle cx="127" cy="900" r="17"/><circle cx="185" cy="885" r="17"/></g>
+<path d="M0 956Q300 915 600 967t600-10v43H0Z" fill="#74b88a"/>
+</svg>
