@@ -6,8 +6,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#17633e"><meta name="description" content="Portal de eleições escolares do Colégio Estadual Presidente Kennedy.">
-<title>Kennedy Vota | Eleição Escolar</title>
+<meta name="theme-color" content="#17633e"><meta name="description" content="Portal Kennedy Vota: eleições escolares, cadastro por Google ou e-mail e senha.">
+<title>Kennedy Vota | Eleições escolares</title>
 <style>
 :root{--green:#17633e;--green2:#25834f;--mint:#e8f4ec;--bg:#f5f8f5;--ink:#17271d;--muted:#718078;--line:#dce6de;--white:#fff;--gold:#d8ad52;--red:#b84a4a;--shadow:0 12px 30px #1d43210a}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer;border:0}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #7dc99a;outline-offset:2px}
@@ -100,7 +100,7 @@ body.dark .auth-visual-caption{background:linear-gradient(transparent,#071b12ee)
   <div class="grid split"><div class="panel"><div class="panel-head"><div><h3 id="electionFormTitle">Nova eleição</h3><p>Preencha as informações principais.</p></div></div>
   <form id="electionForm"><input type="hidden" id="electionId"><div class="form-grid">
     <div class="field full"><label for="eTitle">Nome da eleição</label><input id="eTitle" required placeholder="Ex.: Eleição de representantes de turma"></div>
-    <div class="field"><label for="eType">Tipo de eleição</label><select id="eType"><option>Representante de turma</option><option>Direção escolar</option><option>Grêmio estudantil</option><option>Conselho escolar</option><option>Outra</option></select></div>
+    <div class="field"><label for="eType">Tipo de eleição</label><select id="eType"><option>Representante de turma</option><option>Direção escolar</option><option>Representação pedagógica</option><option>Representante de professores</option><option>Grêmio estudantil</option><option>Conselho escolar</option><option>Outra</option></select></div>
     <div class="field"><label for="eStatus">Situação</label><select id="eStatus"><option value="Planejada">Planejada</option><option value="Aberta">Aberta</option><option value="Encerrada">Encerrada</option></select></div>
     <div class="field"><label for="eStart">Início</label><input type="datetime-local" id="eStart" required></div>
     <div class="field"><label for="eEnd">Encerramento</label><input type="datetime-local" id="eEnd" required></div>
