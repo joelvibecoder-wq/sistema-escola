@@ -1,23 +1,25 @@
 {
-  "name": "eleicao-escolar-demo",
-  "version": "2.0.0",
+  "name": "kennedy-vota",
+  "version": "3.0.0",
   "private": true,
   "type": "module",
-  "description": "API demonstrativa do Eleição Escolar com PostgreSQL",
+  "description": "Kennedy Vota: acesso Google e senha, eleições e PWA",
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "build": "node --check server.js"
+    "build": "node --check server.js && node --check public/app.js && node scripts/generate-icons.mjs",
+    "check": "node --check server.js && node --check public/app.js"
   },
   "engines": {
     "node": ">=20"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
-    "cors": "^2.8.5",
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2",
     "pg": "^8.13.1",
-    "google-auth-library": "^9.15.1"
+    "google-auth-library": "^9.15.1",
+    "express-rate-limit": "^7.5.0",
+    "sharp": "^0.34.4"
   }
 }
