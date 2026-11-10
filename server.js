@@ -70,6 +70,7 @@ async function initDb(){
   "CREATE INDEX IF NOT EXISTS kv_ballots_election ON kv_ballots(election_id,candidate_id);"
  );
  dbReady=true;
+ console.info("Kennedy Vota: PostgreSQL conectado e estrutura de tabelas verificada.");
 }
 app.get("/api/status",wrap(async(req,res)=>{
  let ready=false;if(db&&dbReady){try{await db.query("SELECT 1");ready=true;}catch{}}
