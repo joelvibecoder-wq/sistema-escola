@@ -47,9 +47,10 @@
   $("appShell").hidden=true;$("authScreen").classList.add("open");
   $("loginControls").hidden=!!S.user;
   $("authLogout").hidden=!S.user;
+  $("pendingActions").hidden=!S.user||S.user.approved;
   const n=$("authStatus");n.hidden=!status;n.textContent=status||"";
-  $("authHeading").textContent=S.user?"Seu cadastro foi recebido":"Bem-vindo ao Kennedy Vota";
-  $("authIntro").textContent=S.user?"Você poderá entrar no painel após a aprovação do seu cadastro pela escola.":"Entre com Google ou e-mail e senha. O acesso às eleições depende de aprovação escolar.";
+  $("authHeading").textContent=S.user?"Olá, "+S.user.name+"!":"Bem-vindo ao Kennedy Vota";
+  $("authIntro").textContent=S.user?"Você entrou com "+S.user.email+". Sua conta está aguardando a autorização da escola para votar.":"Se você já tem cadastro, selecione Entrar e informe seu e-mail e senha. Se é a primeira vez, escolha Criar conta.";
  }
  function showApp(){
   $("authScreen").classList.remove("open");$("appShell").hidden=false;
@@ -237,17 +238,34 @@
  $("refreshUsers").onclick=renderUsers;
  function setAuth(mode){
   S.authMode=mode;document.querySelectorAll("[data-auth]").forEach(b=>b.classList.toggle("active",b.dataset.auth===mode));
-  $("authNameWrap").hidden=mode!=="signup";$("authRoleWrap").hidden=mode!=="signup";$("authName").required=mode==="signup";
-  $("authSubmit").textContent=mode==="signup"?"Criar conta":"Entrar";$("authPass").autocomplete=mode==="signup"?"new-password":"current-password";
+  const signup=mode==="signup";
+  $("authNameWrap").hidden=!signup;$("authRoleWrap").hidden=!signup;$("authName").required=signup;
+  // O mínimo de 10 caracteres vale somente para SENHAS NOVAS.
+  // Senhas de contas já existentes devem poder autenticar sem validação HTML de cadastro.
+  $("authPass").minLength=signup?10:1;
+  $("authPass").autocomplete=signup?"new-password":"current-password";
+  $("authPass").placeholder=signup?"Crie uma senha (mínimo 10 caracteres)":"Digite a senha da sua conta";
+  $("authSubmit").textContent=signup?"Criar meu cadastro":"Entrar na minha conta";
+  $("authSwitchText").textContent=signup?"Já tem cadastro?":"Ainda não tem conta?";
+  $("authSwitchButton").textContent=signup?"Entrar com minha conta":"Criar cadastro";
+  $("authEmail").autocomplete=signup?"email":"username";
  }
  document.querySelectorAll("[data-auth]").forEach(b=>b.onclick=()=>setAuth(b.dataset.auth));
+ $("authSwitchButton").onclick=()=>{setAuth(S.authMode==="signup"?"login":"signup");$("authPass").value="";$("authEmail").focus();};
  $("authForm").onsubmit=async event=>{
   event.preventDefault();const btn=$("authSubmit");btn.disabled=true;
   try{
    const input={name:$("authName").value,email:$("authEmail").value,password:$("authPass").value,requestedRole:$("authRole").value};
    const data=await api(S.authMode==="signup"?"/api/register":"/api/login","POST",input);
-   S.user=data.user;await afterLogin();
-  }catch(e){message(e.message);}finally{btn.disabled=false;}
+   S.user=data.user;$("authPass").value="";await afterLogin();
+  }catch(e){
+   if(S.authMode==="signup"&&/já cadastrado|já existe/i.test(e.message)){
+    setAuth("login");
+    $("authPass").value="";
+    message("Este e-mail já tem cadastro. Entre com sua senha.");
+    $("authPass").focus();
+   }else message(e.message);
+  }finally{btn.disabled=false;}
  };
  async function logout(){
   try{await api("/api/logout","POST");}catch(e){message(e.message);}
@@ -255,9 +273,22 @@
  }
  $("logoutBtn").onclick=logout;$("authLogout").onclick=logout;
  async function afterLogin(){
-  if(!S.user?.approved){showAuth("Sua identidade foi cadastrada. Aguarde a aprovação da escola.");return;}
+  if(!S.user?.approved){
+   showAuth("Entrada realizada com sucesso. Cadastro pendente de aprovação escolar.");
+   return;
+  }
   showApp();try{await refresh();}catch(e){message(e.message);}
  }
+ $("checkApproval").onclick=async()=>{
+  const button=$("checkApproval");button.disabled=true;
+  try{
+   const result=await api("/api/me");
+   S.user=result.user;
+   if(S.user.approved){await afterLogin();message("Cadastro aprovado! Bem-vindo ao Kennedy Vota.");}
+   else showAuth("Seu cadastro ainda está em análise. Não é necessário fazer outro.");
+  }catch(e){message(e.message);}
+  finally{button.disabled=false;}
+ };
  function loadGoogle(clientId){
   const start=Date.now();const interval=setInterval(()=>{
    if(!window.google?.accounts?.id){if(Date.now()-start>12000){clearInterval(interval);$("googleAuthMount").textContent="Não foi possível carregar o login Google."; }return;}
