@@ -163,6 +163,13 @@ body.dark .auth-text-button{color:#a9efbe}
 .account-overview #dashboardCheckApproval{margin-top:4px}
 body.dark .account-overview{background:#102b1d}
 @media(max-width:560px){.account-overview-heading{display:block}.account-overview #accountApproval{margin-top:10px}}
+
+.admin-setup-entry{border-top:1px solid var(--line);padding-top:14px;margin-top:16px}
+.admin-setup-form{display:grid;gap:11px;margin-top:13px}
+.admin-setup-form h3{font-size:15px;margin:2px 0}
+.admin-setup-form .field{margin:0}
+.admin-setup-form .btn{width:100%}
+body.dark .admin-setup-entry{border-color:#376247}
 </style>
 </head>
 <body>
@@ -282,6 +289,19 @@ body.dark .account-overview{background:#102b1d}
         <div class="field"><label for="googleRole">Perfil solicitado com Google</label><select id="googleRole"><option value="aluno">Aluno</option><option value="professor">Professor</option></select></div>
         <div id="googleAuthMount" class="google-holder"></div>
         <p class="auth-note">O primeiro acesso cria uma solicitação pendente. Apenas a administração da escola pode aprovar eleitores. O login Google depende da ativação no Google Cloud.</p>
+        <div id="adminSetupEntry" class="admin-setup-entry" hidden>
+          <button type="button" id="showAdminSetup" class="auth-text-button">Sou responsável pela escola: ativar administração</button>
+          <form id="adminSetupForm" class="admin-setup-form" hidden>
+            <h3>Ativação segura da administração</h3>
+            <p class="auth-note">Disponível apenas com a autorização exclusiva configurada no Render. Use seu e-mail e escolha uma senha pessoal aqui no site.</p>
+            <div class="field"><label for="setupAdminName">Nome do administrador</label><input id="setupAdminName" autocomplete="name" required minlength="3" maxlength="120"></div>
+            <div class="field"><label for="setupAdminEmail">E-mail administrativo autorizado</label><input id="setupAdminEmail" type="email" autocomplete="email" required></div>
+            <div class="field"><label for="setupAdminPassword">Senha administrativa (mínimo 12 caracteres)</label><input id="setupAdminPassword" type="password" autocomplete="new-password" required minlength="12"></div>
+            <div class="field"><label for="setupAdminCode">Código de ativação confidencial</label><input id="setupAdminCode" type="password" autocomplete="off" required></div>
+            <button class="btn btn-primary" type="submit" id="createAdminBtn">Ativar minha conta administrativa</button>
+            <button class="btn btn-line" id="cancelAdminSetup" type="button">Voltar à entrada</button>
+          </form>
+        </div>
       </div>
       <div class="form-actions" style="justify-content:space-between;align-items:center">
         <button class="btn btn-line" id="installApp" type="button">⬇ Instalar aplicativo</button>
