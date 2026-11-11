@@ -1,7 +1,7 @@
 "use strict";
 (()=>{
  const $=id=>document.getElementById(id);
- const S={user:null,elections:[],candidates:[],voted:new Set(),editingElection:null,editingCandidate:null,selectedCandidate:null,authMode:"login",results:null,resultsElection:null,activePage:"dashboard",installPrompt:null,googleClientId:"",adminSetupAvailable:false};
+ const S={user:null,elections:[],candidates:[],voted:new Set(),editingElection:null,editingCandidate:null,selectedCandidate:null,authMode:"login",results:null,resultsElection:null,activePage:"dashboard",installPrompt:null,googleClientId:"",adminSetupAvailable:false,deletingElectionId:null};
  const escape=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
  const date=v=>v?new Date(v).toLocaleString("pt-BR",{dateStyle:"short",timeStyle:"short"}):"—";
  const toLocal=v=>{const d=new Date(v);if(!Number.isFinite(+d))return"";return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16)};
@@ -28,6 +28,7 @@
  function go(page){
   if(!S.user)return;
   closeProfileMenu();
+  closeElectionDeleteModal();
   if(page==="users"&&!isAdmin())return;
   if(page==="vote"&&!S.user.approved){message("Seu cadastro precisa da aprovação da escola para votar.");return;}
   const target=$("page-"+page);if(!target)return;
@@ -50,6 +51,7 @@
  function showAuth(status){
   closeProfileMenu();
   closeLogoutModal();
+  closeElectionDeleteModal();
   $("appShell").hidden=true;$("authScreen").classList.add("open");
   $("loginControls").hidden=!!S.user;
   $("authLogout").hidden=!S.user;
@@ -101,12 +103,14 @@
  function renderElections(){
   $("electionCount").textContent=S.elections.length+" processo(s)";
   $("electionList").innerHTML=S.elections.length?S.elections.map(e=>{
-   const controls=isAdmin()?'<div class="actions">'+(e.status==="Planejada"?'<button class="mini-btn" data-edit-election="'+e.id+'">Editar</button><button class="mini-btn" data-status-election="'+e.id+'" data-next="Aberta">Abrir</button><button class="mini-btn" data-delete-election="'+e.id+'">Excluir</button>':e.status==="Aberta"?'<button class="mini-btn" data-status-election="'+e.id+'" data-next="Encerrada">Encerrar</button>':"")+'</div>':"";
-   return '<div class="election-card"><span class="election-symbol">◉</span><div class="election-info"><b>'+escape(e.title)+'</b><small>'+escape(e.kind)+' · '+date(e.starts_at)+' até '+date(e.ends_at)+'</small><small>'+candidatesFor(e.id).length+' candidatura(s) · Eleitores: '+e.eligible_roles.map(escape).join(", ")+'</small></div><span class="status '+(e.status==="Planejada"?"planned":e.status==="Encerrada"?"closed":"")+'">'+escape(e.status)+'</span>'+controls+'</div>';
+   const controls=isAdmin()?'<div class="actions">'+(e.status==="Planejada"?'<button type="button" class="mini-btn" data-edit-election="'+e.id+'">Editar</button><button type="button" class="mini-btn" data-status-election="'+e.id+'" data-next="Aberta">Abrir</button>':e.status==="Aberta"?'<button type="button" class="mini-btn" data-status-election="'+e.id+'" data-next="Encerrada">Encerrar</button>':"")+'<button type="button" class="mini-btn election-delete-trigger" data-delete-election="'+e.id+'" aria-label="Excluir eleição '+escape(e.title)+'">Excluir</button></div>':"";
+   const heading=isAdmin()?'<button type="button" class="election-name-button" data-open-election="'+e.id+'" aria-label="Abrir opções de exclusão para '+escape(e.title)+'">'+escape(e.title)+'</button><small class="election-management-hint">Clique no nome para ver e excluir esta eleição</small>':'<b>'+escape(e.title)+'</b>';
+   return '<div class="election-card"><span class="election-symbol">◉</span><div class="election-info">'+heading+'<small>'+escape(e.kind)+' · '+date(e.starts_at)+' até '+date(e.ends_at)+'</small><small>'+candidatesFor(e.id).length+' candidatura(s) · Eleitores: '+e.eligible_roles.map(escape).join(", ")+'</small></div><span class="status '+(e.status==="Planejada"?"planned":e.status==="Encerrada"?"closed":"")+'">'+escape(e.status)+'</span>'+controls+'</div>';
   }).join(""):'<div class="empty"><strong>Nenhuma eleição</strong>Os processos da escola aparecerão aqui.</div>';
   $("electionList").querySelectorAll("[data-edit-election]").forEach(b=>b.onclick=()=>editElection(b.dataset.editElection));
   $("electionList").querySelectorAll("[data-status-election]").forEach(b=>b.onclick=()=>changeStatus(b.dataset.statusElection,b.dataset.next));
   $("electionList").querySelectorAll("[data-delete-election]").forEach(b=>b.onclick=()=>deleteElection(b.dataset.deleteElection));
+  $("electionList").querySelectorAll("[data-open-election]").forEach(b=>b.onclick=()=>deleteElection(b.dataset.openElection));
   const c=$("cElection").value,r=$("resultsElection").value;
   $("cElection").innerHTML=options(S.elections.filter(e=>e.status==="Planejada"),"Crie uma eleição planejada");
   $("candidateFilter").innerHTML='<option value="">Todas as eleições</option>'+S.elections.map(e=>'<option value="'+e.id+'">'+escape(e.title)+'</option>').join("");
@@ -140,10 +144,66 @@
   try{await api("/api/elections/"+id+"/status","POST",{status});await refresh();message("Situação atualizada.");}
   catch(e){message(e.message);}
  }
- async function deleteElection(id){
-  if(!confirm("Excluir o rascunho e suas candidaturas?"))return;
-  try{await api("/api/elections/"+id,"DELETE");await refresh();message("Rascunho excluído.");}catch(e){message(e.message);}
+ // Clique no nome ou em Excluir: seleção, aviso e confirmação digitada.
+ function deleteElection(id){
+  if(!isAdmin())return;
+  const election=byElection(id);
+  if(!election){message("Eleição não encontrada. Atualize a página.");return;}
+  S.deletingElectionId=id;
+  $("deleteElectionName").textContent=election.title;
+  $("deleteElectionDetails").textContent=election.status+" · "+date(election.starts_at)+" até "+date(election.ends_at)+" · "+candidatesFor(id).length+" candidatura(s)";
+  $("deleteElectionInput").value="";
+  $("deleteElectionError").hidden=true;
+  $("deleteElectionError").textContent="";
+  $("confirmDeleteElection").disabled=true;
+  $("electionDeleteModal").classList.add("open");
+  $("electionDeleteModal").setAttribute("aria-hidden","false");
+  $("deleteElectionInput").focus({preventScroll:true});
  }
+ function closeElectionDeleteModal(){
+  S.deletingElectionId=null;
+  const modal=$("electionDeleteModal");
+  if(!modal)return;
+  modal.classList.remove("open");
+  modal.setAttribute("aria-hidden","true");
+  $("deleteElectionInput").value="";
+  $("confirmDeleteElection").disabled=true;
+ }
+ $("cancelDeleteElection").onclick=closeElectionDeleteModal;
+ $("electionDeleteModal").onclick=event=>{
+  if(event.target===$("electionDeleteModal")&&!$("confirmDeleteElection").dataset.busy)closeElectionDeleteModal();
+ };
+ $("deleteElectionInput").oninput=()=>{
+  $("confirmDeleteElection").disabled=$("deleteElectionInput").value.trim()!=="EXCLUIR"||!S.deletingElectionId;
+  $("deleteElectionError").hidden=true;
+ };
+ $("confirmDeleteElection").onclick=async()=>{
+  if(!isAdmin()||$("deleteElectionInput").value.trim()!=="EXCLUIR"||!S.deletingElectionId)return;
+  const id=S.deletingElectionId,election=byElection(id);
+  if(!election){closeElectionDeleteModal();message("Eleição não encontrada.");return;}
+  const button=$("confirmDeleteElection");
+  button.disabled=true;button.dataset.busy="1";
+  button.textContent="Excluindo...";
+  $("cancelDeleteElection").disabled=true;
+  try{
+   await api("/api/elections/"+id,"DELETE",{confirmText:"EXCLUIR",expectedTitle:election.title});
+   closeElectionDeleteModal();
+   if(S.editingElection===id)resetElection();
+   if(S.resultsElection===id){S.results=null;S.resultsElection=null;}
+   S.selectedCandidate=null;
+   message("Eleição excluída com sucesso, incluindo seus candidatos e votos.");
+   try{await refresh();}catch(err){message("Eleição excluída. Atualize a página para atualizar a lista.");}
+  }catch(e){
+   $("deleteElectionError").textContent=e.message;
+   $("deleteElectionError").hidden=false;
+   message(e.message);
+  }finally{
+   button.textContent="Excluir definitivamente";
+   button.dataset.busy="";
+   $("cancelDeleteElection").disabled=false;
+   button.disabled=$("deleteElectionInput").value.trim()!=="EXCLUIR"||!S.deletingElectionId;
+  }
+ };
  function renderCandidates(){
   const q=$("candidateSearch").value.toLowerCase(),filter=$("candidateFilter").value;
   const rows=S.candidates.filter(c=>(!filter||c.election_id===filter)&&(c.name+" "+c.number+" "+c.office).toLowerCase().includes(q));
@@ -389,6 +449,10 @@
  });
  document.addEventListener("keydown",event=>{
   if(event.key!=="Escape")return;
+  if($("electionDeleteModal").classList.contains("open")){
+   if(!$("confirmDeleteElection").dataset.busy)closeElectionDeleteModal();
+   return;
+  }
   if($("logoutModal").classList.contains("open")){closeLogoutModal();$("profileTrigger").focus({preventScroll:true});}
   else if(!$("profileMenu").hidden){closeProfileMenu();$("profileTrigger").focus({preventScroll:true});}
  });
