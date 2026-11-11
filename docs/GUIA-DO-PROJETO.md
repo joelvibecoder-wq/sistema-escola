@@ -124,13 +124,28 @@ Em caso de erro, a interface informa se a conta não foi aprovada, se o processo
 
 Resultados antes do encerramento são bloqueados pela API.
 
-## 9. Perfil e saída
+## 9. Excluir uma eleição (inclusive encerrada)
+
+A exclusão é **definitiva** e está disponível apenas na conta do administrador. Apaga **a eleição, as candidaturas e todos os votos e registros de participação associados**. Não há como recuperar esses dados por meio do aplicativo.
+
+1. Entre na conta do **administrador**.
+2. Abra **Eleições** e localize a eleição que deseja excluir.
+3. Clique **no nome da eleição** para abrir suas opções ou diretamente no botão vermelho **Excluir**. Isso funciona para eleições **Planejadas, Abertas e Encerradas**.
+4. Confira o nome, a situação e as datas mostradas na janela.
+5. Caso precise preservar a apuração, **exporte os resultados antes**, na página Apuração.
+6. Digite a palavra **EXCLUIR** no campo de confirmação.
+7. Clique em **Excluir definitivamente**. O sistema executará a remoção no banco e atualizará a lista.
+8. Para cancelar, clique em **Cancelar** ou feche a janela antes de confirmar.
+
+**Não exclua eleições reais ou com dados que precise preservar.** Em caso de erro, a tela mostrará a mensagem devolvida pelo servidor.
+
+## 10. Perfil e saída
 
 No canto superior direito, clique no nome da pessoa conectada. O menu permite consultar nome, e-mail próprio, idade opcional e indicador de senha protegida. É possível **informar a idade**, **alterar a senha informando a atual** e clicar no botão vermelho **Sair da conta**. O sistema pergunta **“Sair da sua conta?”** e só encerra após confirmação.
 
 O sistema não permite recuperar a senha antiga em texto. Para senhas salvas no navegador, utilize o gerenciador de senhas do próprio navegador.
 
-## 10. Atualizar o código sem perder dados
+## 11. Atualizar o código sem perder dados
 
 1. Edite os arquivos no repositório; não inclua `.env` ou segredos.
 2. Execute `npm run check` e `npm run build`.
@@ -150,7 +165,7 @@ O sistema não permite recuperar a senha antiga em texto. Para senhas salvas no 
 | Interface antiga no celular | Atualizar página e, se necessário, reinstalar/atualizar PWA |
 | `/api/status` não está pronto | Conferir `DATABASE_URL`, `SESSION_SECRET`, PostgreSQL e logs do Render |
 
-## 11. Limitações e boas práticas
+## 12. Limitações e boas práticas
 
 - **Não usar este projeto em eleições reais** sem auditoria e infraestrutura adequadas.
 - Não há verificação automática de e-mail local nem recuperação de senha por e-mail.
