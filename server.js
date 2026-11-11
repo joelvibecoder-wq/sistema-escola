@@ -52,6 +52,7 @@ async function logged(req,res,next){
 }
 function admin(req,res,next){if(req.current.approved!==true||req.current.role!=="admin")return error(res,403,"Acesso restrito à administração.");next();}
 function approved(req,res,next){if(!req.current.approved)return error(res,403,"Cadastro aguardando aprovação.");next();}
+function eligibleToVote(role,allowedRoles){return Array.isArray(allowedRoles)&&(allowedRoles.includes(role)||(role==="admin"&&allowedRoles.includes("professor")));}
 function sameOrigin(req,res,next){
   const origin=req.get("origin");
   // O cabeçalho customizado impede envios por formulário cross-site (CSRF).
@@ -277,7 +278,7 @@ app.post("/api/elections/:id/vote",limitVote,sameOrigin,available,logged,approve
   const e=(await c.query("SELECT * FROM kv_elections WHERE id=$1 FOR UPDATE",[req.params.id])).rows[0];
   if(!e||e.status!=="Aberta"||Date.now()<+new Date(e.starts_at)||Date.now()>=+new Date(e.ends_at)){
    await c.query("ROLLBACK");return error(res,409,"Eleição indisponível.");}
-  if(!e.eligible_roles.includes(req.current.role)){await c.query("ROLLBACK");return error(res,403,"Perfil não habilitado.");}
+  if(!eligibleToVote(req.current.role,e.eligible_roles)){await c.query("ROLLBACK");return error(res,403,"Este perfil não está habilitado para votar nesta eleição.");}
   const cand=await c.query("SELECT id FROM kv_candidates WHERE id=$1 AND election_id=$2",[candidateId,e.id]);
   if(!cand.rowCount){await c.query("ROLLBACK");return error(res,400,"Candidato inválido.");}
   await c.query("INSERT INTO kv_participation(election_id,user_id) VALUES($1,$2)",[e.id,req.current.id]);
