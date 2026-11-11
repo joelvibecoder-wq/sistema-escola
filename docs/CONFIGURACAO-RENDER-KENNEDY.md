@@ -1,26 +1,36 @@
-# Kennedy Vota — preparação do PostgreSQL
+# Configuração do Render — Kennedy Vota
 
-O banco Render gratuito criado para este projeto é **kennedy-vota-db**, no workspace **Joel_vibecoder** (região Ohio, PostgreSQL 16). Este arquivo descreve a preparação; **não declara que a conexão foi feita nem que o SQL já foi executado**.
+[← README](../README.md) · [Guia completo](GUIA-DO-PROJETO.md) · [Segurança](SEGURANCA.md)
 
-## Segurança e limites
+> **Documento atualizado.** Substitui instruções antigas que descreviam uma aplicação somente estática ou um banco ainda não conectado.
 
-- Usar somente para desenvolvimento e testes com dados fictícios. O banco gratuito expira após 30 dias e não oferece backup gerenciado suficiente para eleição oficial.
-- O serviço atualmente publicado em `sistema-escola-p7xy.onrender.com` é um **Static Site**, portanto **não executa** a API `server.js` nem consegue escrever no Postgres.
-- É necessário criar/configurar um **Render Web Service Node.js** e definir a variável **DATABASE_URL** com a URL **interna** do Postgres, no painel privado do Render. Não enviar credenciais ao GitHub, ao chat ou ao navegador.
-- Configurar **GOOGLE_CLIENT_ID** no Render, com credencial criada em Google Cloud Console e origem autorizada exatamente igual ao domínio HTTPS do servidor.
-- Definir uma **JWT_SECRET** forte somente no ambiente servidor, se a API utilizar sessões JWT.
-- O protótipo atualmente ainda contém telas/votos no `localStorage`; substituir a votação local por uma API transacional e esconder rotas de administração com verificação de autorização no servidor, antes de uso real.
-- O endpoint preparatório de Google apenas valida ID token e coloca usuários como pendentes; não concede privilégios administrativos nem habilita votar.
-- Aplicar `db/kennedy-vota-schema.sql` em ambiente de desenvolvimento com migração controlada após revisão, sem tocar nos registros de demonstração existentes. O script ainda não foi executado no banco.
-- A comissão eleitoral deve aprovar participantes por um fluxo autenticado e auditado; jamais aprovar contas ou conceder papel admin por entrada enviada pelo browser.
-- O registro de participação e a cédula devem ser inseridos na mesma transação. Garantia real de sigilo exige auditoria do sistema completo, logs e infraestrutura.
+O **Kennedy Vota** usa o Web Service Node.js publicado em **https://kennedy-vota-app.onrender.com**, associado à branch `feature/google-login-animacoes-20261109`.
 
-## Próximas etapas técnicas
+### Como a versão atual está organizada
 
-1. Concluir provisionamento do banco no Render e configurar a URL interna no serviço de API Node.
-2. Executar migração após revisão, com permissões restritas.
-3. Conectar OAuth Google e implementar aprovação de perfis.
-4. Migrar telas de eleições, candidatos, votação e apuração do `localStorage` para endpoints com autorização.
-5. Fazer testes de concorrência, voto duplicado, recuperação, backup, privacidade e segurança antes de uma eleição real.
+- **Serviço:** Render Web Service Node.js, build `npm install && npm run build`, inicialização `npm start`.
+- **API:** `server.js` (Express), saúde em `GET /api/status`.
+- **Banco:** PostgreSQL já conectado ao serviço em testes (a conexão aparece nos logs de inicialização).
+- **Migração:** `server.js` verifica/cria as tabelas `kv_*` e atualiza a coluna opcional de idade.
+- **Site anterior:** uma implantação estática mais antiga pode continuar disponível separadamente; não é o serviço atual.
+- **PWA:** arquivos em `public/` e geração dos ícones no build.
 
-**Estado:** banco criado no Render; esquema preparado no GitHub; conexão, migração e produção ainda pendentes.
+### Variáveis (valores somente no painel privado)
+
+| Variável | Função |
+| --- | --- |
+| `DATABASE_URL` | Conexão PostgreSQL |
+| `SESSION_SECRET` | Chave privada de sessão |
+| `NODE_ENV` | `production` |
+| `ADMIN_SETUP_EMAIL` | Endereço permitido para ativação inicial |
+| `ADMIN_SETUP_TOKEN` | Token confidencial de uso único |
+| `GOOGLE_CLIENT_ID` | Login Google opcional |
+| `ADMIN_GOOGLE_EMAIL` | Configuração opcional de administrador Google |
+
+**Nunca coloque os valores** dessas variáveis, credenciais, senhas, tokens ou e-mails pessoais em commits e documentação pública.
+
+**Passo a passo operacional atualizado:** [GUIA-DO-PROJETO.md](GUIA-DO-PROJETO.md).  
+**Arquitetura:** [ARQUITETURA.md](ARQUITETURA.md).  
+**Diagrama lógico:** [diagrama-logico-kennedy-vota.svg](diagrama-logico-kennedy-vota.svg).
+
+**Atenção:** a aplicação continua experimental. Verificar banco conectado não comprova segurança ou prontidão para eleições oficiais.
