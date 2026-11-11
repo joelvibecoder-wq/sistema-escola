@@ -269,14 +269,33 @@ app.post("/api/elections/:id/status",sameOrigin,available,logged,admin,wrap(asyn
   await c.query("UPDATE kv_elections SET status=$1 WHERE id=$2",[status,e.id]);await c.query("COMMIT");res.json({ok:true});
  }catch(e){await c.query("ROLLBACK");throw e;}finally{c.release();}
 }));
+// Exclusão definitiva de eleições em qualquer situação (Planejada, Aberta ou Encerrada).
+// Exige administrador autenticado, título exato e a palavra EXCLUIR.
+// Os votos e participações vinculados são apagados na mesma transação, sem afetar outras eleições.
 app.delete("/api/elections/:id",sameOrigin,available,logged,admin,wrap(async(req,res)=>{
- const c=await db.connect();try{
+ const c=await db.connect();
+ try{
   await c.query("BEGIN");
-  const e=(await c.query("SELECT status FROM kv_elections WHERE id=$1 FOR UPDATE",[req.params.id])).rows[0];
-  if(!e||e.status!=="Planejada"){await c.query("ROLLBACK");return error(res,409,"Só é possível excluir eleições planejadas.");}
-  await c.query("DELETE FROM kv_candidates WHERE election_id=$1",[req.params.id]);
-  await c.query("DELETE FROM kv_elections WHERE id=$1",[req.params.id]);await c.query("COMMIT");res.json({ok:true});
- }catch(e){await c.query("ROLLBACK");throw e;}finally{c.release();}
+  const election=(await c.query("SELECT id,title,status FROM kv_elections WHERE id=$1 FOR UPDATE",[req.params.id])).rows[0];
+  if(!election){
+   await c.query("ROLLBACK");
+   return error(res,404,"Esta eleição não existe mais. Atualize a lista.");
+  }
+  if(req.body?.confirmText!=="EXCLUIR"||req.body?.expectedTitle!==election.title){
+   await c.query("ROLLBACK");
+   return error(res,400,"Confirmação inválida. Selecione a eleição e digite EXCLUIR para continuar.");
+  }
+  const ballots=await c.query("DELETE FROM kv_ballots WHERE election_id=$1",[election.id]);
+  const participation=await c.query("DELETE FROM kv_participation WHERE election_id=$1",[election.id]);
+  const candidates=await c.query("DELETE FROM kv_candidates WHERE election_id=$1",[election.id]);
+  const deleted=await c.query("DELETE FROM kv_elections WHERE id=$1 RETURNING id",[election.id]);
+  if(deleted.rowCount!==1)throw Error("Não foi possível concluir a exclusão da eleição.");
+  await c.query("COMMIT");
+  res.json({ok:true,deleted:{elections:1,candidates:candidates.rowCount,participations:participation.rowCount,ballots:ballots.rowCount}});
+ }catch(e){
+  await c.query("ROLLBACK");
+  throw e;
+ }finally{c.release();}
 }));
 function parseCandidate(input){
  const name=text(input?.name,160),number=text(input?.number,15),office=text(input?.office,120),proposals=text(input?.proposals,3000);
