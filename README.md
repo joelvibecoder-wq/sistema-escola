@@ -28,11 +28,11 @@ A versão atual conta com entrada por e-mail/senha, aprovação de cadastros por
 | Passo a passo | [Guia do projeto](https://github.com/joelvibecoder-wq/sistema-escola/blob/feature/google-login-animacoes-20261109/docs/GUIA-DO-PROJETO.md) |
 | Arquitetura | [Arquitetura, regras e dados](https://github.com/joelvibecoder-wq/sistema-escola/blob/feature/google-login-animacoes-20261109/docs/ARQUITETURA.md) |
 | Segurança | [Informações publicáveis e confidenciais](https://github.com/joelvibecoder-wq/sistema-escola/blob/feature/google-login-animacoes-20261109/docs/SEGURANCA.md) |
-| Diagrama lógico (imagem) | [Imagem SVG em tamanho completo](https://github.com/joelvibecoder-wq/sistema-escola/blob/feature/google-login-animacoes-20261109/docs/diagrama-logico-kennedy-vota.svg) |
+| Diagrama lógico (imagem) | [Imagem PNG em tamanho completo](https://github.com/joelvibecoder-wq/sistema-escola/blob/feature/google-login-animacoes-20261109/docs/fluxograma-logico-kennedy-vota.png) |
 
 ## Diagrama lógico do Kennedy Vota
 
-[![Diagrama lógico do Kennedy Vota](https://raw.githubusercontent.com/joelvibecoder-wq/sistema-escola/refs/heads/feature/google-login-animacoes-20261109/docs/diagrama-logico-kennedy-vota.svg)](https://github.com/joelvibecoder-wq/sistema-escola/blob/feature/google-login-animacoes-20261109/docs/diagrama-logico-kennedy-vota.svg)
+[![Diagrama lógico do Kennedy Vota](https://raw.githubusercontent.com/joelvibecoder-wq/sistema-escola/refs/heads/feature/google-login-animacoes-20261109/docs/fluxograma-logico-kennedy-vota.png)](https://github.com/joelvibecoder-wq/sistema-escola/blob/feature/google-login-animacoes-20261109/docs/fluxograma-logico-kennedy-vota.png)
 
 ## Como o sistema funciona
 
