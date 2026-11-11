@@ -6,7 +6,7 @@
 **Projeto web educacional para organizar e simular eleições no ambiente escolar.**  
 Cadastro de pessoas, aprovação por administrador, eleições, candidatos, voto único por conta e apuração após o encerramento.
 
-**[🌐 Abrir aplicação](https://kennedy-vota-app.onrender.com)** · **[📐 Ver diagrama lógico](docs/diagrama-logico-kennedy-vota.svg)** · **[📖 Guia passo a passo](docs/GUIA-DO-PROJETO.md)** · **[🔧 Arquitetura](docs/ARQUITETURA.md)**
+**[🌐 Abrir aplicação](https://kennedy-vota-app.onrender.com)** · **[📐 Ver diagrama lógico](docs/fluxograma-logico-kennedy-vota.png)** · **[📖 Guia passo a passo](docs/GUIA-DO-PROJETO.md)** · **[🔧 Arquitetura](docs/ARQUITETURA.md)**
 
 </div>
 
@@ -49,11 +49,11 @@ Nenhuma senha, token, código administrativo, URL autenticada do banco ou lista 
 
 ## 3. Diagrama lógico completo
 
-A imagem SVG abaixo representa os componentes, os perfis e o caminho dos dados **conforme o código atual**; não contém credenciais nem dados pessoais:
+A imagem PNG abaixo representa os componentes, os perfis e o caminho dos dados **conforme o código atual**; não contém credenciais nem dados pessoais:
 
-[![Diagrama lógico Kennedy Vota — navegador, API, PostgreSQL, fluxo de votação e segurança](docs/diagrama-logico-kennedy-vota.svg)](docs/diagrama-logico-kennedy-vota.svg)
+[![Diagrama lógico Kennedy Vota — navegador, API, PostgreSQL, fluxo de votação e segurança](docs/fluxograma-logico-kennedy-vota.png)](docs/fluxograma-logico-kennedy-vota.png)
 
-**[Abrir imagem em tamanho completo](docs/diagrama-logico-kennedy-vota.svg)** · **[Detalhes técnicos e regras](docs/ARQUITETURA.md)**
+**[Abrir imagem em tamanho completo](docs/fluxograma-logico-kennedy-vota.png)** · **[Detalhes técnicos e regras](docs/ARQUITETURA.md)**
 
 ## 4. Organização do repositório
 
@@ -77,7 +77,8 @@ sistema-escola/
 ├── db/
 │   └── kennedy-vota-schema.sql        # Referência de esquema (revisar versões)
 ├── docs/
-│   ├── diagrama-logico-kennedy-vota.svg # Imagem oficial do diagrama
+│   ├── fluxograma-logico-kennedy-vota.png # Fluxograma oficial enviado pelo autor
+│   ├── diagrama-logico-kennedy-vota.svg # Versão vetorial anterior
 │   ├── ARQUITETURA.md                 # Componentes, tabelas, rotas e regras
 │   ├── GUIA-DO-PROJETO.md             # Passo a passo completo
 │   └── SEGURANCA.md                   # Dados confidenciais e limitações
@@ -151,7 +152,7 @@ As cédulas não incluem a identidade direta do eleitor. Isso **não dispensa** 
 
 ## 9. Guias e referência
 
-- **[Diagrama lógico em imagem](docs/diagrama-logico-kennedy-vota.svg)** — visão visual do fluxo inteiro.
+- **[Diagrama lógico em imagem](docs/fluxograma-logico-kennedy-vota.png)** — fluxograma original do sistema, em PNG.
 - **[Guia do projeto](docs/GUIA-DO-PROJETO.md)** — uso, desenvolvimento, implantação e teste passo a passo.
 - **[Arquitetura](docs/ARQUITETURA.md)** — módulos, banco de dados, API e regras de negócio.
 - **[Segurança e privacidade](docs/SEGURANCA.md)** — proteção de contas e limites desta versão.
