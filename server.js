@@ -32,7 +32,7 @@ const limitAuth=rateLimit({windowMs:15*60*1000,limit:15,standardHeaders:"draft-7
 const limitVote=rateLimit({windowMs:60*1000,limit:12,standardHeaders:"draft-7",legacyHeaders:false});
 function text(x,max=160){return String(x??"").trim().slice(0,max);}
 function validEmail(x){return typeof x==="string"&&x.length<=254&&/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x);}
-function jsonUser(u){return {id:u.id,name:u.full_name,email:u.email,requestedRole:u.requested_role,role:u.role,approved:u.approved};}
+function jsonUser(u){return {id:u.id,name:u.full_name,email:u.email,requestedRole:u.requested_role,role:u.role,approved:u.approved,ageYears:u.age_years??null};}
 const cname="kennedy_session";
 function setCookie(res,id){
   if(secret.length<32)throw Error("SESSION_SECRET não configurado");
@@ -45,7 +45,7 @@ function available(req,res,next){if(!db||!dbReady||secret.length<32)return error
 async function logged(req,res,next){
  try{
   const p=jwt.verify(getCookie(req),secret,{algorithms:["HS256"],issuer:"kennedy-vota",audience:"kennedy-web"});
-  const {rows}=await db.query("SELECT id,full_name,email,requested_role,role,approved FROM kv_users WHERE id=$1",[p.sub]);
+  const {rows}=await db.query("SELECT id,full_name,email,requested_role,role,approved,age_years FROM kv_users WHERE id=$1",[p.sub]);
   if(!rows.length)return error(res,401,"Sua sessão expirou.");
   req.current=rows[0];next();
  }catch{return error(res,401,"Entre na sua conta para continuar.");}
@@ -71,6 +71,8 @@ async function initDb(){
   "CREATE INDEX IF NOT EXISTS kv_ballots_election ON kv_ballots(election_id,candidate_id);"+
   "CREATE TABLE IF NOT EXISTS kv_admin_setup (singleton boolean PRIMARY KEY DEFAULT TRUE CHECK(singleton),admin_user_id UUID NOT NULL REFERENCES kv_users(id),activated_at TIMESTAMPTZ NOT NULL DEFAULT now());"
  );
+ // Perfil: idade opcional, visível apenas ao próprio usuário autenticado.
+ await db.query("ALTER TABLE kv_users ADD COLUMN IF NOT EXISTS age_years SMALLINT;");
  dbReady=true;
  console.info("Kennedy Vota: PostgreSQL conectado e estrutura de tabelas verificada.");
 }
@@ -189,6 +191,35 @@ app.post("/api/admin/setup",adminSetupLimiter,sameOrigin,available,wrap(async(re
  res.status(201).json({user:jsonUser(user)});
 }));
 app.get("/api/me",available,logged,(req,res)=>res.json({user:jsonUser(req.current)}));
+// Idade opcional: salva apenas na conta da pessoa autenticada, sem expor a outros usuários.
+app.post("/api/profile/age",sameOrigin,available,logged,wrap(async(req,res)=>{
+ const value=req.body?.age;
+ const age=value===null||value===""?null:value;
+ if(age!==null&&(!Number.isInteger(age)||age<4||age>120))
+  return error(res,400,"Informe uma idade válida entre 4 e 120 anos.");
+ const {rows}=await db.query(
+  "UPDATE kv_users SET age_years=$1 WHERE id=$2 RETURNING id,full_name,email,requested_role,role,approved,age_years",
+  [age,req.current.id]
+ );
+ if(!rows.length)return error(res,404,"Conta não encontrada.");
+ res.json({user:jsonUser(rows[0])});
+}));
+// A senha antiga nunca é devolvida pela API. Troca somente mediante verificação da senha atual.
+app.post("/api/profile/password",limitAuth,sameOrigin,available,logged,wrap(async(req,res)=>{
+ const current=typeof req.body?.currentPassword==="string"?req.body.currentPassword:"";
+ const next=typeof req.body?.newPassword==="string"?req.body.newPassword:"";
+ if(!current||next.length<10||Buffer.byteLength(next)>72)
+  return error(res,400,"Informe a senha atual e uma nova senha com 10 a 72 bytes.");
+ if(current===next)return error(res,400,"Escolha uma nova senha diferente da atual.");
+ const {rows}=await db.query("SELECT password_hash FROM kv_users WHERE id=$1",[req.current.id]);
+ if(!rows.length)return error(res,404,"Conta não encontrada.");
+ if(!rows[0].password_hash)return error(res,409,"Esta conta usa entrada com Google e ainda não possui uma senha cadastrada.");
+ if(!(await bcrypt.compare(current,rows[0].password_hash)))
+  return error(res,403,"Senha atual incorreta.");
+ const hash=await bcrypt.hash(next,12);
+ await db.query("UPDATE kv_users SET password_hash=$1 WHERE id=$2",[hash,req.current.id]);
+ res.json({ok:true});
+}));
 app.post("/api/logout",sameOrigin,(req,res)=>{clearCookie(res);res.json({ok:true});});
 app.get("/api/users/pending",available,logged,admin,wrap(async(req,res)=>{
  const {rows}=await db.query("SELECT id,full_name,email,requested_role,created_at FROM kv_users WHERE approved=false ORDER BY created_at LIMIT 200");
