@@ -69,6 +69,7 @@ flowchart LR
 5. **Eleitor elegível:** deve estar logado, aprovado e ter papel compatível. Admin é elegível apenas quando a eleição aceita professores.
 6. **Confirmação:** API valida eleição, candidato, prazo e vínculo; então grava `kv_participation` + `kv_ballots` na mesma transação.
 7. **Encerramento:** admin encerra manualmente ou o relógio ultrapassa `ends_at`; resultados ficam acessíveis após o período ou quando status é Encerrada.
+8. **Exclusão administrativa opcional:** o administrador pode selecionar uma eleição Planejada, Aberta ou Encerrada e escolher **Excluir**. Após digitar `EXCLUIR`, o servidor exige também o título exato e apaga, em transação, suas cédulas, participações, candidaturas e o processo. **A ação é irreversível e os resultados são perdidos.** Exporte a apuração antes da exclusão caso precise preservá-la.
 
 **Não existe opção de voto duplicado, troca de voto nem reabertura automática.**
 
@@ -94,7 +95,7 @@ flowchart LR
 | `POST /api/elections` | Criar eleição Planejada | Admin |
 | `PATCH /api/elections/:id` | Editar Planejada | Admin |
 | `POST /api/elections/:id/status` | Abrir ou encerrar | Admin |
-| `DELETE /api/elections/:id` | Excluir rascunho | Admin |
+| `DELETE /api/elections/:id` | Excluir eleição em qualquer situação e seus registros associados (votos e participação) | Admin + confirmação explícita |
 | `POST /api/candidates` | Cadastrar candidato | Admin |
 | `PATCH /api/candidates/:id` | Editar candidato | Admin |
 | `DELETE /api/candidates/:id` | Excluir candidato | Admin |
