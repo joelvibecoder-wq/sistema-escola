@@ -40,6 +40,7 @@ Nenhuma senha, token, código administrativo, URL autenticada do banco ou lista 
 - **Acesso ao painel** após autenticação, incluindo informação sobre aprovação da conta.
 - **Menu de perfil** no canto superior direito: nome, e-mail da própria conta, idade opcional, senha protegida, opção de trocar senha e **saída com confirmação**.
 - **Gerenciamento de eleições** e candidaturas para administradores.
+- **Exclusão de eleições** por administrador, inclusive abertas ou encerradas, com confirmação digitada; a remoção também apaga candidaturas, participações e votos associados de forma irreversível.
 - **Área de votação** para usuários aprovados e elegíveis, quando a eleição estiver aberta no período correto.
 - **Um voto por conta e eleição** por restrição e transação no banco.
 - **Apuração** consultável após o encerramento.
