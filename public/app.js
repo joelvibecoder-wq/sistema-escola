@@ -27,6 +27,7 @@
  $("darkSwitch").onchange=()=>theme($("darkSwitch").checked);
  function go(page){
   if(!S.user)return;
+  closeProfileMenu();
   if(page==="users"&&!isAdmin())return;
   if(page==="vote"&&!S.user.approved){message("Seu cadastro precisa da aprovação da escola para votar.");return;}
   const target=$("page-"+page);if(!target)return;
@@ -47,6 +48,8 @@
   side.style.cssText=side.classList.contains("mobile-open")?"display:flex;position:fixed;inset:0 auto 0 0;width:min(290px,85vw);z-index:15;box-shadow:0 0 0 100vmax #10261970;overflow:auto":"";
  };
  function showAuth(status){
+  closeProfileMenu();
+  closeLogoutModal();
   $("appShell").hidden=true;$("authScreen").classList.add("open");
   $("loginControls").hidden=!!S.user;
   $("authLogout").hidden=!S.user;
@@ -60,6 +63,7 @@
   $("userName").textContent=S.user.name;
   $("userAvatar").textContent=(S.user.name||"U").charAt(0).toUpperCase();
   $("userRole").textContent=!S.user.approved?"Aguardando aprovação":S.user.role==="admin"?"Administração":S.user.role==="professor"?"Professor":"Aluno";
+  updateProfileDisplay();
   $("adminNav").hidden=!isAdmin();
   $("electionForm").closest(".panel").hidden=!isAdmin();
   $("candidateForm").closest(".panel").hidden=!isAdmin();
@@ -343,11 +347,107 @@
    }else message(e.message);
   }finally{btn.disabled=false;}
  };
- async function logout(){
-  try{await api("/api/logout","POST");}catch(e){message(e.message);}
-  S.user=null;S.elections=[];S.candidates=[];S.voted.clear();showAuth("");
+ // O servidor não revela senhas; o menu mostra apenas status e alteração protegida.
+ function updateProfileDisplay(){
+  if(!S.user)return;
+  $("profileName").textContent=S.user.name||"—";
+  $("profileEmail").textContent=S.user.email||"—";
+  $("profileAge").textContent=Number.isInteger(S.user.ageYears)?S.user.ageYears+" ano(s)":"Não informada";
+  $("profileAgeInput").value=Number.isInteger(S.user.ageYears)?String(S.user.ageYears):"";
  }
- $("logoutBtn").onclick=logout;$("authLogout").onclick=logout;
+ function closeProfileMenu(){
+  const menu=$("profileMenu"),trigger=$("profileTrigger");
+  if(menu)menu.hidden=true;
+  if(trigger)trigger.setAttribute("aria-expanded","false");
+ }
+ function openProfileMenu(){
+  if(!S.user)return;
+  updateProfileDisplay();
+  $("profileMenu").hidden=false;
+  $("profileTrigger").setAttribute("aria-expanded","true");
+  $("profileClose").focus({preventScroll:true});
+ }
+ function closeLogoutModal(){
+  const modal=$("logoutModal");
+  if(modal)modal.classList.remove("open");
+  if(modal)modal.setAttribute("aria-hidden","true");
+ }
+ function openLogoutModal(){
+  closeProfileMenu();
+  const modal=$("logoutModal");
+  modal.classList.add("open");
+  modal.setAttribute("aria-hidden","false");
+  $("cancelLogout").focus({preventScroll:true});
+ }
+ $("profileTrigger").onclick=()=>{
+  if($("profileMenu").hidden)openProfileMenu();
+  else closeProfileMenu();
+ };
+ $("profileClose").onclick=()=>{closeProfileMenu();$("profileTrigger").focus({preventScroll:true});};
+ document.addEventListener("click",event=>{
+  if(!$("profileMenu").hidden&&!event.target.closest(".profile-anchor"))closeProfileMenu();
+ });
+ document.addEventListener("keydown",event=>{
+  if(event.key!=="Escape")return;
+  if($("logoutModal").classList.contains("open")){closeLogoutModal();$("profileTrigger").focus({preventScroll:true});}
+  else if(!$("profileMenu").hidden){closeProfileMenu();$("profileTrigger").focus({preventScroll:true});}
+ });
+ $("profileAgeForm").onsubmit=async event=>{
+  event.preventDefault();
+  const button=$("profileAgeSave");button.disabled=true;
+  try{
+   const raw=$("profileAgeInput").value.trim();
+   const result=await api("/api/profile/age","POST",{age:raw===""?null:Number(raw)});
+   S.user=result.user;
+   updateProfileDisplay();
+   $("profileAgeDetails").open=false;
+   message("Idade atualizada com sucesso.");
+  }catch(e){message(e.message);}finally{button.disabled=false;}
+ };
+ $("profilePasswordForm").onsubmit=async event=>{
+  event.preventDefault();
+  const button=$("profilePasswordSave");button.disabled=true;
+  try{
+   await api("/api/profile/password","POST",{
+    currentPassword:$("profileCurrentPass").value,
+    newPassword:$("profileNewPass").value
+   });
+   $("profilePasswordForm").reset();
+   for(const id of ["profileCurrentPass","profileNewPass"]){
+    const input=$(id),toggle=document.querySelector('[data-password-toggle="'+id+'"]');
+    input.type="password";
+    if(toggle){
+     toggle.setAttribute("aria-pressed","false");
+     toggle.setAttribute("aria-label","Mostrar senha");
+     toggle.title="Mostrar senha";
+     toggle.querySelector(".password-eye-open").hidden=false;
+     toggle.querySelector(".password-eye-closed").hidden=true;
+    }
+   }
+   $("profilePasswordDetails").open=false;
+   message("Senha alterada com sucesso.");
+  }catch(e){message(e.message);}finally{button.disabled=false;}
+ };
+ $("profileLogout").onclick=openLogoutModal;
+ $("logoutBtn").onclick=openLogoutModal;
+ $("authLogout").onclick=openLogoutModal;
+ $("cancelLogout").onclick=()=>{closeLogoutModal();$("profileTrigger").focus({preventScroll:true});};
+ $("logoutModal").onclick=event=>{if(event.target===$("logoutModal"))closeLogoutModal();};
+ async function logout(){
+  const button=$("confirmLogout");button.disabled=true;
+  try{
+   await api("/api/logout","POST");
+   closeLogoutModal();
+   closeProfileMenu();
+   S.user=null;S.elections=[];S.candidates=[];S.voted.clear();
+   $("profilePasswordForm").reset();
+   showAuth("");
+   setAuth("login");
+   message("Você saiu da conta com segurança.");
+  }catch(e){message("Não foi possível encerrar a sessão: "+e.message);}
+  finally{button.disabled=false;}
+ }
+ $("confirmLogout").onclick=logout;
  async function afterLogin(){
   // Depois de confirmar a senha e encontrar a conta, abrir o painel.
   // O backend continua bloqueando votos sem aprovação escolar.
