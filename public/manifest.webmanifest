@@ -1,21 +1,36 @@
 {
-  "id": "./",
-  "name": "Eleição Escolar — Eleição Escolar",
-  "short_name": "Eleição Escolar",
-  "description": "Protótipo PWA educacional de eleição escolar com candidaturas e dados fictícios.",
-  "start_url": "./",
-  "scope": "./",
+  "name": "Kennedy Vota · Eleições Escolares",
+  "short_name": "Kennedy Vota",
+  "description": "Portal escolar de eleições e participação",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "orientation": "any",
-  "background_color": "#f4faf6",
-  "theme_color": "#125b35",
-  "categories": ["education", "utilities"],
+  "background_color": "#f5f8f5",
+  "theme_color": "#17633e",
+  "categories": [
+    "education",
+    "utilities"
+  ],
+  "prefer_related_applications": false,
   "icons": [
     {
-      "src": "./icon.svg",
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ]
 }
