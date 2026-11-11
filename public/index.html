@@ -694,6 +694,18 @@ body.dark .auth-card .password-toggle:hover{
 .auth-card .password-input-wrap input::-ms-reveal,
 .auth-card .password-input-wrap input::-ms-clear{display:none}
 
+
+/* Votação funcional em telas pequenas, status visível e ajuda de configuração. */
+.election-setup-hint{display:block;color:var(--muted);font-size:11px;line-height:1.6;margin-top:5px}
+.election-setup-hint b{color:var(--ink)}
+.vote-refresh-line{display:flex;justify-content:flex-end;margin-top:12px}
+.vote-refresh-line .btn{font-size:12px;padding:8px 13px}
+.vote-feedback{margin-top:14px;line-height:1.6}
+@media(max-width:1100px){.vote-layout aside{order:0}}
+body.dark .election-setup-hint{color:#add4b8}
+body.dark .election-setup-hint b{color:#e8faee}
+body.dark #page-vote .vote-refresh-line .btn{background:#294a35;color:#d8f9e2;border:1px solid #4a7858}
+body.dark #page-vote .vote-feedback{background:#193b28;color:#d7f4df;border:1px solid #457a57}
 </style>
 </head>
 <body>
@@ -744,7 +756,7 @@ body.dark .auth-card .password-toggle:hover{
   <form id="electionForm"><input type="hidden" id="electionId"><div class="form-grid">
     <div class="field full"><label for="eTitle">Nome da eleição</label><input id="eTitle" required placeholder="Ex.: Eleição de representantes de turma"></div>
     <div class="field"><label for="eType">Tipo de eleição</label><select id="eType"><option>Representante de turma</option><option>Direção escolar</option><option>Representação pedagógica</option><option>Representante de professores</option><option>Grêmio estudantil</option><option>Conselho escolar</option><option>Outra</option></select></div>
-    <div class="field"><label for="eStatus">Situação</label><select id="eStatus"><option value="Planejada">Planejada</option><option value="Aberta">Aberta</option><option value="Encerrada">Encerrada</option></select></div>
+    <div class="field"><label for="eStatus">Situação inicial</label><select id="eStatus" disabled><option value="Planejada">Planejada — aguardando candidatos</option></select><small class="election-setup-hint">Cadastre pelo menos dois candidatos e clique em <b>Abrir</b> na lista de eleições.</small></div>
     <div class="field"><label for="eStart">Início</label><input type="datetime-local" id="eStart" required></div>
     <div class="field"><label for="eEnd">Encerramento</label><input type="datetime-local" id="eEnd" required></div>
     <div class="field full"><label for="eDesc">Descrição (opcional)</label><textarea id="eDesc" placeholder="Informações para os participantes"></textarea></div>
@@ -764,7 +776,7 @@ body.dark .auth-card .password-toggle:hover{
 </section>
 <section class="page" id="page-vote">
   <div class="eyebrow">PARTICIPAÇÃO</div><h2 class="section-title">Área de votação</h2><p class="section-sub">Escolha uma eleição aberta, confira a candidatura e confirme sua escolha.</p>
-  <div class="grid vote-layout"><div class="panel"><div class="panel-head"><div><h3>Selecione uma eleição</h3><p>Somente processos em situação aberta aparecem aqui.</p></div></div><div class="field"><label for="voteElection">Eleição disponível</label><select id="voteElection"></select></div><div id="voteCandidates" style="margin-top:18px"></div></div><aside class="panel"><div class="confirm-box"><h4>Confirme sua escolha</h4><p id="voteSummary">Selecione uma candidatura para continuar.</p><button class="btn btn-primary" id="confirmVote" disabled>Confirmar voto</button><div class="notice">Ambiente em desenvolvimento e testes. Não utilizar para eleições oficiais antes de auditoria de segurança.</div></div></aside></div>
+  <div class="grid vote-layout"><div class="panel"><div class="panel-head"><div><h3>Selecione uma eleição</h3><p>Somente processos em situação aberta aparecem aqui.</p></div></div><div class="field"><label for="voteElection">Eleição disponível</label><select id="voteElection"></select></div><div class="vote-refresh-line"><button class="btn btn-soft" id="voteRefresh" type="button">↻ Atualizar eleições</button></div><div id="voteCandidates" style="margin-top:18px"></div><div id="voteFeedback" class="notice vote-feedback" role="status" aria-live="polite" hidden></div></div><aside class="panel"><div class="confirm-box"><h4>Confirme sua escolha</h4><p id="voteSummary">Selecione uma candidatura para continuar.</p><button class="btn btn-primary" id="confirmVote" disabled>Confirmar voto</button><div class="notice">Ambiente em desenvolvimento e testes. Não utilizar para eleições oficiais antes de auditoria de segurança.</div></div></aside></div>
 </section>
 <section class="page" id="page-results">
   <div class="eyebrow">TRANSPARÊNCIA</div><h2 class="section-title">Apuração</h2><p class="section-sub">Acompanhe a contagem dos votos por eleição e candidatura.</p>
