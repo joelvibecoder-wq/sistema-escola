@@ -1,12 +1,81 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
- <rect width="512" height="512" rx="115" fill="#104b2e"/>
- <rect x="51" y="51" width="410" height="410" rx="85" fill="#e9f7ed"/>
- <path d="M112 236 256 124 400 236v151H112Z" fill="#47a36a"/>
- <path d="M112 236 256 124 400 236" stroke="#104b2e" stroke-width="20" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
- <rect x="157" y="258" width="59" height="60" rx="6" fill="#e9f7ed"/>
- <rect x="299" y="258" width="59" height="60" rx="6" fill="#e9f7ed"/>
- <rect x="232" y="279" width="48" height="108" rx="6" fill="#0c3221"/>
- <path d="M197 145h118" stroke="#104b2e" stroke-width="9" stroke-linecap="round"/>
- <path d="m208 177 48 26 48-26" stroke="#104b2e" stroke-width="11" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
- <circle cx="364" cy="149" r="24" fill="#a9e8bc"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+<title id="title">Kennedy Vota - urna tridimensional com cédula</title>
+<desc id="desc">Ícone de uma urna vista de lado, em perspectiva tridimensional, com uma cédula branca e um símbolo de confirmação verde entrando na abertura.</desc>
+<defs>
+  <linearGradient id="background" x1="0" x2="1" y1="0" y2="1">
+    <stop offset="0" stop-color="#061c50"/>
+    <stop offset=".53" stop-color="#0753a6"/>
+    <stop offset="1" stop-color="#012347"/>
+  </linearGradient>
+  <radialGradient id="shine" cx=".48" cy=".16" r=".85">
+    <stop offset="0" stop-color="#65c1ff" stop-opacity=".55"/>
+    <stop offset=".6" stop-color="#1387e5" stop-opacity=".08"/>
+    <stop offset="1" stop-color="#032253" stop-opacity="0"/>
+  </radialGradient>
+  <linearGradient id="side" x1="0" x2="1" y1="0" y2="1">
+    <stop offset="0" stop-color="#d5e1ed"/>
+    <stop offset=".65" stop-color="#70879e"/>
+    <stop offset="1" stop-color="#465d76"/>
+  </linearGradient>
+  <linearGradient id="top" x1="0" x2=".75" y1="0" y2="1">
+    <stop offset="0" stop-color="#ffffff"/>
+    <stop offset=".5" stop-color="#dfe9f4"/>
+    <stop offset="1" stop-color="#a9bbcc"/>
+  </linearGradient>
+  <linearGradient id="front" x1="0" x2=".9" y1="0" y2="1">
+    <stop offset="0" stop-color="#fbfdff"/>
+    <stop offset=".55" stop-color="#d9e4ef"/>
+    <stop offset="1" stop-color="#8da9c0"/>
+  </linearGradient>
+  <linearGradient id="screen" x1="0" x2="1" y1="0" y2="1">
+    <stop offset="0" stop-color="#092934"/>
+    <stop offset="1" stop-color="#0d5637"/>
+  </linearGradient>
+  <linearGradient id="ballot" x1="0" x2="1" y1="0" y2="1">
+    <stop offset="0" stop-color="#ffffff"/>
+    <stop offset="1" stop-color="#d7e9ec"/>
+  </linearGradient>
+  <linearGradient id="green" x1="0" x2="1" y1="0" y2="1">
+    <stop offset="0" stop-color="#81ff76"/>
+    <stop offset="1" stop-color="#21b951"/>
+  </linearGradient>
+  <filter id="shadow" x="-35%" y="-50%" width="170%" height="200%">
+    <feGaussianBlur stdDeviation="12"/>
+  </filter>
+  <filter id="cast" x="-30%" y="-30%" width="160%" height="180%">
+    <feDropShadow dx="2" dy="13" stdDeviation="11" flood-color="#00152e" flood-opacity=".5"/>
+  </filter>
+  <filter id="card" x="-30%" y="-30%" width="160%" height="180%">
+    <feDropShadow dx="3" dy="4" stdDeviation="3" flood-color="#001331" flood-opacity=".3"/>
+  </filter>
+</defs>
+<!-- Fundo que ocupa todo o ícone, adequado ao recorte do Android/iOS -->
+<rect x="2" y="2" width="508" height="508" rx="105" fill="url(#background)"/>
+<rect x="2" y="2" width="508" height="508" rx="105" fill="url(#shine)"/>
+<rect x="15" y="15" width="482" height="482" rx="97" fill="none" stroke="#75c5ff" stroke-opacity=".34" stroke-width="5"/>
+<ellipse cx="266" cy="420" rx="171" ry="29" fill="#00112b" opacity=".44" filter="url(#shadow)"/>
+<!-- Urna: face lateral, tampa inclinada e face frontal -->
+<g filter="url(#cast)">
+  <path d="M105 204 L180 253 L180 407 Q178 414 168 408 L112 375 Q104 370 104 360 Z" fill="url(#side)" stroke="#708ba7" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M105 204 Q108 197 119 197 L358 197 Q368 198 375 207 L432 252 L180 259 Z" fill="url(#top)" stroke="#f5fbff" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M177 260 Q177 254 187 254 L423 254 Q434 254 435 267 L435 394 Q435 407 422 408 L193 423 Q181 423 180 410 Z" fill="url(#front)" stroke="#f2fbff" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M183 271 L423 267" stroke="#fff" stroke-width="4" opacity=".7"/>
+  <path d="M190 401 L426 388" stroke="#627c96" stroke-width="5" opacity=".65"/>
+</g>
+<!-- Papel inclinado para dentro da abertura -->
+<g filter="url(#card)">
+  <path d="M223 98 Q224 89 232 90 L332 107 Q340 108 339 117 L328 240 L216 228 Z" fill="url(#ballot)" stroke="#ffffff" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M239 109 L318 123" fill="none" stroke="#d5e1e8" stroke-width="3"/>
+  <rect x="244" y="139" width="67" height="66" rx="10" transform="rotate(7 278 172)" fill="#f5fff6" stroke="#279c54" stroke-width="6"/>
+  <path d="M256 169 L273 184 L305 148" fill="none" stroke="#23ae54" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<!-- Fenda escura sobre a base do papel para dar sensação de inserção -->
+<path d="M197 232 L322 229 L352 244 L221 247 Z" fill="#10263c" stroke="#6b839d" stroke-width="5" stroke-linejoin="round"/>
+<path d="M221 243 L349 241" stroke="#000b18" stroke-width="7" stroke-linecap="round"/>
+<!-- Placa frontal da urna -->
+<rect x="208" y="294" width="190" height="95" rx="15" fill="url(#screen)" stroke="#486f77" stroke-width="5"/>
+<path d="M226 314 L248 314 L248 334 L226 334 Z" fill="none" stroke="#72f58f" stroke-width="5" stroke-linejoin="round"/>
+<path d="M231 324 L239 332 L256 312" fill="none" stroke="#67f87d" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M273 317 H378 M273 336 H359 M227 365 H379" stroke="#8defad" stroke-width="8" opacity=".85" stroke-linecap="round"/>
+<circle cx="417" cy="390" r="5" fill="#2ac85f"/>
 </svg>
