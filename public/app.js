@@ -16,6 +16,7 @@
  }
  function isAdmin(){return S.user?.role==="admin"&&S.user?.approved===true}
  function isOpen(e){return e.status==="Aberta"&&Date.now()>=new Date(e.starts_at).getTime()&&Date.now()<new Date(e.ends_at).getTime()}
+ function eligibleToVote(e){const roles=e?.eligible_roles||[];return roles.includes(S.user?.role)||(S.user?.role==="admin"&&roles.includes("professor"));}
  function candidatesFor(id){return S.candidates.filter(c=>c.election_id===id)}
  function byElection(id){return S.elections.find(e=>e.id===id)}
  function byCandidate(id){return S.candidates.find(c=>c.id===id)}
@@ -34,7 +35,8 @@
   document.querySelectorAll("[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===page));
   const names={dashboard:"Visão geral",elections:"Eleições",candidates:"Candidatos",vote:"Área de votação",results:"Apuração",settings:"Configurações",users:"Cadastros"};
   $("topTitle").textContent=names[page]||"Kennedy Vota";S.activePage=page;
-  if(page==="vote")renderVote();if(page==="results")renderResults();if(page==="users")renderUsers();
+  if(page==="vote"){renderVote();refresh().catch(e=>{$("voteFeedback").hidden=false;$("voteFeedback").textContent=e.message;});}
+  if(page==="results")renderResults();if(page==="users")renderUsers();
   const side=document.querySelector(".side");side.classList.remove("mobile-open");side.style.cssText="";
   window.scrollTo({top:0,behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"instant":"smooth"});
  }
@@ -119,7 +121,7 @@
     start:new Date($("eStart").value).toISOString(),end:new Date($("eEnd").value).toISOString(),
     eligibleRoles:["aluno","professor"]};
    if(S.editingElection)await api("/api/elections/"+S.editingElection,"PATCH",input);else await api("/api/elections","POST",input);
-   resetElection();await refresh();message("Eleição salva com sucesso.");
+   resetElection();await refresh();message("Eleição salva como Planejada. Cadastre dois candidatos e clique Abrir.");
   }catch(err){message(err.message);}
  };
  $("eCancel").onclick=resetElection;
@@ -171,20 +173,32 @@
  $("candidateSearch").oninput=renderCandidates;$("candidateFilter").onchange=renderCandidates;
  function renderVote(){
   if(!S.user?.approved){
+   $("voteRefresh").hidden=false;
    $("confirmVote").disabled=true;
    $("voteElection").innerHTML='<option value="">Aguardando aprovação</option>';
    $("voteCandidates").innerHTML='<div class="empty"><strong>Aguardando aprovação da escola</strong>O administrador precisa autorizar sua conta antes de você votar.</div>';
    $("voteSummary").textContent="Votação disponível somente após aprovação.";
    return;
   }
-  const available=S.elections.filter(isOpen).filter(e=>e.eligible_roles.includes(S.user?.role));
+  const available=S.elections.filter(isOpen).filter(eligibleToVote);
   const current=$("voteElection").value;$("voteElection").innerHTML=options(available,"Não há eleições abertas para seu perfil");
   if(available.some(e=>e.id===current))$("voteElection").value=current;
   const id=$("voteElection").value;
   S.selectedCandidate=null;$("confirmVote").disabled=true;
   $("voteSummary").textContent="Selecione uma candidatura para continuar.";
-  if(!id){$("voteCandidates").innerHTML='<div class="empty"><strong>Nenhuma votação disponível</strong>Consulte o período e o público autorizado.</div>';return;}
-  if(S.voted.has(id)){$("voteCandidates").innerHTML='<div class="empty"><strong>Sua participação já foi registrada</strong>Esta conta não pode votar novamente na mesma eleição.</div>';return;}
+  $("voteRefresh").hidden=false;
+  if(!id){
+   let heading="Nenhuma votação disponível",reason="Aguarde uma eleição aberta para seu perfil.";
+   if(!S.elections.length){heading="Nenhuma eleição cadastrada";reason="A administração precisa criar uma eleição e cadastrar pelo menos dois candidatos.";}
+   else if(S.elections.some(e=>e.status==="Planejada")){heading="Eleição ainda não aberta";reason="A administração precisa cadastrar pelo menos dois candidatos e clicar em Abrir na página Eleições.";}
+   else if(S.elections.some(e=>e.status==="Aberta"&&Date.now()<new Date(e.starts_at).getTime())){heading="Votação ainda não iniciada";reason="A eleição foi aberta, mas o horário de início ainda não chegou.";}
+   else if(S.elections.some(e=>e.status==="Aberta"&&isOpen(e))){heading="Perfil sem permissão";reason="Há uma eleição aberta, mas este perfil não está habilitado para votar nela.";}
+   else {heading="Nenhuma votação em andamento";reason="O período de votação terminou ou não há processos ativos.";}
+   $("voteCandidates").innerHTML='<div class="empty"><strong>'+escape(heading)+'</strong>'+escape(reason)+'</div>';
+   $("voteSummary").textContent=reason;
+   return;
+  }
+  if(S.voted.has(id)){$("voteCandidates").innerHTML='<div class="empty"><strong>Sua participação já foi registrada</strong>Esta conta não pode votar novamente na mesma eleição.</div>';$("voteSummary").textContent="Você já votou nesta eleição.";return;}
   const candidates=candidatesFor(id);
   $("voteCandidates").innerHTML=candidates.length?candidates.map(c=>
    '<label class="vote-option" data-choice="'+c.id+'"><input type="radio" name="voteChoice" value="'+c.id+'"><span class="candidate-number">'+escape(c.number)+'</span><span><b>'+escape(c.name)+'</b><small>'+escape(c.office)+'</small></span></label>').join(""):'<div class="empty">Esta eleição ainda não tem candidaturas.</div>';
@@ -196,7 +210,13 @@
    };
   });
  }
- $("voteElection").onchange=renderVote;
+ $("voteElection").onchange=()=>{$("voteFeedback").hidden=true;renderVote();};
+ $("voteRefresh").onclick=async()=>{
+  const button=$("voteRefresh");button.disabled=true;
+  try{await refresh();$("voteFeedback").hidden=true;message("Eleições atualizadas.");}
+  catch(e){$("voteFeedback").hidden=false;$("voteFeedback").textContent=e.message;message(e.message);}
+  finally{button.disabled=false;}
+ };
  $("confirmVote").onclick=()=>{
   const c=byCandidate(S.selectedCandidate),e=byElection($("voteElection").value);if(!c||!e)return;
   $("modalText").textContent="Confirmar a candidatura "+c.name+" (nº "+c.number+") na eleição "+e.title+"?";
@@ -204,11 +224,24 @@
  };
  $("modalCancel").onclick=()=>$("voteModal").classList.remove("open");
  $("modalConfirm").onclick=async()=>{
-  const id=$("voteElection").value,button=$("modalConfirm");button.disabled=true;
-  try{await api("/api/elections/"+id+"/vote","POST",{candidateId:S.selectedCandidate});
-   $("voteModal").classList.remove("open");await refresh();message("Voto registrado. Sua escolha permanece sigilosa.");}
-  catch(e){$("voteModal").classList.remove("open");message(e.message);await refresh().catch(()=>{});}
-  finally{button.disabled=false;}
+  const id=$("voteElection").value,button=$("modalConfirm");
+  if(!S.user?.approved||!id||!S.selectedCandidate)return;
+  button.disabled=true;
+  try{
+   await api("/api/elections/"+id+"/vote","POST",{candidateId:S.selectedCandidate});
+   S.voted.add(id);
+   $("voteModal").classList.remove("open");
+   $("voteFeedback").hidden=false;
+   $("voteFeedback").textContent="Voto registrado com sucesso. Sua escolha é sigilosa e não pode ser alterada.";
+   renderVote();
+   try{await refresh();}catch{message("Voto registrado. Atualize a página para consultar as eleições.");}
+  }catch(e){
+   $("voteModal").classList.remove("open");
+   $("voteFeedback").hidden=false;
+   $("voteFeedback").textContent=e.message;
+   await refresh().catch(()=>{});
+   message(e.message);
+  }finally{button.disabled=false;}
  };
  async function renderResults(){
   const el=$("resultsElection"),id=el.value,box=$("resultsContent");
