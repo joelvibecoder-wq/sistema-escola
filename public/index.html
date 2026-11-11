@@ -843,6 +843,75 @@ body.dark .logout-dialog-icon{background:#54272b;color:#ffbfc2}
 
 /* Modal de saída: avisos de erro e sucesso visíveis acima da confirmação. */
 .toast{z-index:145!important}
+
+/* Gerenciamento de eleições: seleção da eleição e exclusão com confirmação explícita. */
+.election-name-button{
+  display:inline-block;
+  max-width:100%;
+  padding:3px 5px 3px 0;
+  border-radius:6px;
+  background:transparent;
+  color:inherit;
+  text-align:left;
+  font-weight:800;
+  line-height:1.4;
+  text-decoration:underline;
+  text-decoration-color:#53a27066;
+  text-underline-offset:3px;
+}
+.election-name-button:hover{color:var(--green);text-decoration-color:currentColor}
+.election-management-hint{color:var(--muted);font-size:11px;font-weight:550}
+.election-delete-trigger{
+  color:#b22c36;
+  background:#fff0f1;
+  border:1px solid #f0c6c9;
+  font-weight:800;
+}
+.election-delete-trigger:hover{color:#87151e;background:#ffdfe2;border-color:#e59a9e}
+.election-delete-modal{z-index:100}
+.election-delete-dialog{width:min(545px,100%);background:#fff;color:#1c3023;border:1px solid #eed5d5}
+.delete-election-heading{display:flex;align-items:center;gap:13px;margin-bottom:16px}
+.delete-election-heading h3{margin:4px 0 0;font-size:21px;line-height:1.3;color:inherit}
+.delete-election-eyebrow{font-size:10px;letter-spacing:1.5px;color:#a53a45;font-weight:850}
+.delete-election-icon{width:46px;height:46px;display:grid;place-items:center;background:#ffebec;border:1px solid #f1cacd;border-radius:13px;font-size:23px}
+.election-delete-summary{display:grid;gap:5px;background:#f4f8f5;border:1px solid #d9e7dc;padding:12px 15px;border-radius:12px}
+.election-delete-summary strong{color:#1a422a;font-size:15px;overflow-wrap:anywhere}
+.election-delete-summary span{color:#63796a;font-size:12px}
+.election-delete-warning{background:#fff3f1;border-left:4px solid #d43b42;padding:12px 14px;border-radius:8px;color:#70252b!important;line-height:1.55}
+.election-delete-warning strong{color:#a62530}
+.delete-election-export-hint{font-size:12px;line-height:1.5}
+.election-delete-dialog .field{margin:16px 0 0}
+.election-delete-dialog .field label{display:block;color:#344b3a;font-size:12px}
+.election-delete-dialog .field input{width:100%;border:1px solid #d2dcd3;background:white;color:#21362a;border-radius:10px;min-height:45px;padding:10px 12px}
+.election-delete-dialog .field input:focus-visible{outline:2px solid #d6464f;outline-offset:2px}
+.election-delete-error{background:#fff1f2;color:#9d2030!important;padding:9px 12px;border-radius:9px;border:1px solid #ecc0c5}
+.election-delete-confirm{background:#c4303b;color:#fff;border:1px solid #a92b35;font-weight:800}
+.election-delete-confirm:hover:not(:disabled){background:#9f1f2b;color:#fff}
+.election-delete-confirm:disabled{background:#bba7ab;color:#f9ebed;border-color:#bba7ab;box-shadow:none;cursor:not-allowed}
+body.dark .election-name-button:hover{color:#a1f5bd}
+body.dark .election-management-hint{color:#9cc2a7}
+body.dark .election-delete-trigger{background:#522329;color:#ffd7db;border-color:#a24a55}
+body.dark .election-delete-trigger:hover{background:#713039;color:#fff}
+body.dark .election-delete-dialog{background:#19291f;border-color:#713d43;color:#effff1;box-shadow:0 25px 78px #0008}
+body.dark .delete-election-icon{background:#52262b;border-color:#89464a}
+body.dark .delete-election-eyebrow{color:#ffb2ba}
+body.dark .election-delete-summary{background:#142e21;border-color:#3b6348}
+body.dark .election-delete-summary strong{color:#f0fff3}
+body.dark .election-delete-summary span{color:#bbd5c2}
+body.dark .election-delete-warning{background:#442226;color:#ffe2e1!important;border-color:#f27b82}
+body.dark .election-delete-warning strong{color:#ffd0d5}
+body.dark .delete-election-export-hint{color:#bdd4c4}
+body.dark .election-delete-dialog .field label{color:#e1f1e5}
+body.dark .election-delete-dialog .field input{background:#10281b;border-color:#457153;color:#f1fff4}
+body.dark .election-delete-error{background:#472329;border-color:#9d4950;color:#ffdce0!important}
+body.dark .election-delete-confirm:disabled{background:#5f4b4f;border-color:#5f4b4f;color:#c3adb0}
+@media(max-width:760px){
+ .election-delete-dialog{padding:19px}
+ .election-delete-dialog .modal-actions{display:grid;grid-template-columns:1fr;gap:9px}
+ .election-delete-dialog .modal-actions button{width:100%}
+ .election-delete-modal{padding:12px}
+}
+
 </style>
 </head>
 <body>
@@ -973,6 +1042,29 @@ body.dark .logout-dialog-icon{background:#54272b;color:#ffbfc2}
 </div>
 <nav class="mobile-nav" id="mobileNav"><button class="active" data-page="dashboard"><span>▦</span>Início</button><button data-page="elections"><span>◉</span>Eleições</button><button data-page="candidates"><span>♙</span>Candidatos</button><button data-page="vote"><span>✓</span>Votar</button><button data-page="results"><span>▥</span>Apuração</button></nav>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="modal-backdrop election-delete-modal" id="electionDeleteModal" role="dialog" aria-modal="true" aria-labelledby="deleteElectionTitle" aria-describedby="deleteElectionWarning" aria-hidden="true">
+  <div class="modal election-delete-dialog">
+    <div class="delete-election-heading">
+      <div class="delete-election-icon" aria-hidden="true">🗑</div>
+      <div><span class="delete-election-eyebrow">GERENCIAR ELEIÇÃO</span><h3 id="deleteElectionTitle">Excluir eleição?</h3></div>
+    </div>
+    <div class="election-delete-summary">
+      <strong id="deleteElectionName">—</strong>
+      <span id="deleteElectionDetails">—</span>
+    </div>
+    <p id="deleteElectionWarning" class="delete-election-warning"><strong>Atenção: exclusão permanente.</strong> Serão removidos esta eleição, suas candidaturas, todos os votos e registros de participação associados, mesmo que a eleição já tenha sido encerrada ou esteja aberta. Essa ação não poderá ser desfeita.</p>
+    <p class="delete-election-export-hint">Se precisar guardar os resultados de uma eleição encerrada, exporte-os em <strong>Apuração</strong> antes de excluir.</p>
+    <div class="field">
+      <label for="deleteElectionInput">Para confirmar, digite <strong>EXCLUIR</strong>:</label>
+      <input id="deleteElectionInput" type="text" autocomplete="off" spellcheck="false" placeholder="Digite EXCLUIR" aria-describedby="deleteElectionWarning">
+    </div>
+    <p id="deleteElectionError" class="delete-election-error" role="alert" hidden></p>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-line" id="cancelDeleteElection">Cancelar</button>
+      <button type="button" class="btn election-delete-confirm" id="confirmDeleteElection" disabled>Excluir definitivamente</button>
+    </div>
+  </div>
+</div>
 <div class="modal-backdrop" id="voteModal"><div class="modal"><h3>Confirmar voto</h3><p id="modalText">Confira a candidatura antes de confirmar.</p><p><b>Depois de confirmado, seu voto não poderá ser alterado nesta eleição.</b></p><div class="modal-actions"><button class="btn btn-line" id="modalCancel">Voltar</button><button class="btn btn-primary" id="modalConfirm">Confirmar</button></div></div></div>
 <div class="modal-backdrop logout-modal" id="logoutModal" role="dialog" aria-modal="true" aria-labelledby="logoutTitle" aria-describedby="logoutDescription">
   <div class="modal logout-dialog">
