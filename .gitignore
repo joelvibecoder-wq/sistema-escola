@@ -1,0 +1,20 @@
+# Credenciais e configurações locais
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+secrets.*
+credentials.*
+# Dependências e artefatos locais
+node_modules/
+npm-debug.log*
+*.log
+.DS_Store
+Thumbs.db
+coverage/
+.nyc_output/
+.vscode/
+.idea/
