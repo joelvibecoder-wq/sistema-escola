@@ -1,117 +1,57 @@
-# Eleição Escolar
+<div align="center">
 
-Aplicação web educacional para simular eleições no ambiente escolar, incluindo eleições para **direção escolar** e **pedagogia**, além de outros formatos de votação de teste.
+# 🗳️ Kennedy Vota
+### Sistema de votação escolar · repositório e documentação
 
-> **Aviso:** este projeto é uma simulação para fins educacionais. Não é um sistema oficial, não tem validade eleitoral e não deve ser usado para eleições reais. Utilize apenas informações fictícias.
+**Um projeto educacional para aprender sobre eleições escolares, desenvolvimento web e participação da comunidade.**
 
-## Acesso ao projeto
+[**🌐 Acessar o Kennedy Vota**](https://kennedy-vota-app.onrender.com) · [**📂 Ver o código atualizado**](https://github.com/joelvibecoder-wq/sistema-escola/tree/feature/google-login-animacoes-20261109) · [**📖 Abrir documentação completa**](https://github.com/joelvibecoder-wq/sistema-escola/blob/feature/google-login-animacoes-20261109/README.md)
 
-- **Aplicação publicada:** https://sistema-escola-p7xy.onrender.com
-- **Repositório GitHub:** https://github.com/joelvibecoder-wq/sistema-escola
-- **Hospedagem:** Render Static Site
-- **Branch de publicação:** `main`
-- **Diretório publicado:** `public/`
+</div>
 
-O Render está configurado para iniciar uma implantação automaticamente quando há alterações na branch `main`.
+> [!IMPORTANT]
+> **Ambiente experimental.** Não usar em eleições oficiais sem auditoria de segurança, privacidade, disponibilidade e integridade. A aplicação atual está na branch `feature/google-login-animacoes-20261109`; a branch `main` mantém código de uma versão anterior.
 
-## Sobre o sistema
+## Apresentação do repositório
 
-O Eleição Escolar reúne uma interface de simulação eleitoral com páginas para acompanhar a visão geral, escolher candidaturas de teste, consultar apuração ilustrativa, visualizar urnas fictícias e administrar registros.
+Este é o repositório público **[sistema-escola](https://github.com/joelvibecoder-wq/sistema-escola)**, que reúne o projeto **Kennedy Vota** e sua evolução. O sistema foi desenvolvido como experiência educativa e não é um serviço eleitoral oficial nem representa endosso formal de uma escola.
 
-A interface possui layout responsivo, modo claro/escuro e recursos de instalação como PWA.
+A versão atual conta com entrada por e-mail/senha, aprovação de cadastros por administrador, gestão de eleições, candidatos, área de votação, apuração após encerramento, modo escuro, interface para celular e PWA instalável.
 
-### Funcionalidades da interface
+### Links principais
 
-- Tela de cadastro e entrada para acesso à interface.
-- Painel de visão geral.
-- Área de votação de teste com candidaturas fictícias.
-- Apuração ilustrativa e gráficos de resultados.
-- Resumo de urnas de demonstração.
-- Área de administração para criar e gerenciar eleições.
-- CRUD de registros: criação, listagem, pesquisa, edição e exclusão.
-- Página de cadastro do perfil.
-- Navegação lateral, modo claro/escuro e adaptação para celular e computador.
+| Item | Link |
+| --- | --- |
+| Sistema publicado (Render) | **https://kennedy-vota-app.onrender.com** |
+| Código da versão atual | [Branch de desenvolvimento e publicação](https://github.com/joelvibecoder-wq/sistema-escola/tree/feature/google-login-animacoes-20261109) |
+| README completo | [Apresentação + instalação](https://github.com/joelvibecoder-wq/sistema-escola/blob/feature/google-login-animacoes-20261109/README.md) |
+| Passo a passo | [Guia do projeto](https://github.com/joelvibecoder-wq/sistema-escola/blob/feature/google-login-animacoes-20261109/docs/GUIA-DO-PROJETO.md) |
+| Arquitetura | [Arquitetura, regras e dados](https://github.com/joelvibecoder-wq/sistema-escola/blob/feature/google-login-animacoes-20261109/docs/ARQUITETURA.md) |
+| Segurança | [Informações publicáveis e confidenciais](https://github.com/joelvibecoder-wq/sistema-escola/blob/feature/google-login-animacoes-20261109/docs/SEGURANCA.md) |
+| Diagrama lógico (imagem) | [Imagem SVG em tamanho completo](https://github.com/joelvibecoder-wq/sistema-escola/blob/feature/google-login-animacoes-20261109/docs/diagrama-logico-kennedy-vota.svg) |
 
-## Organização dos arquivos
+## Diagrama lógico do Kennedy Vota
 
-```text
-sistema-escola/
-├── public/
-│   ├── index.html             # Interface, estilos e lógica do navegador
-│   ├── manifest.webmanifest   # Configuração da PWA
-│   ├── sw.js                  # Service worker
-│   └── icon.svg               # Ícone da aplicação
-├── docs/
-│   └── fluxograma-sistema.svg # Fluxograma do sistema
-├── package.json               # Metadados e dependências do projeto
-├── server.js                  # API de servidor (implementação em desenvolvimento)
-├── render.yaml                # Configuração declarativa do Render
-└── README.md                 # Documentação principal
-```
+[![Diagrama lógico do Kennedy Vota](https://raw.githubusercontent.com/joelvibecoder-wq/sistema-escola/refs/heads/feature/google-login-animacoes-20261109/docs/diagrama-logico-kennedy-vota.svg)](https://github.com/joelvibecoder-wq/sistema-escola/blob/feature/google-login-animacoes-20261109/docs/diagrama-logico-kennedy-vota.svg)
 
-> A estrutura pode evoluir conforme a integração do backend e do armazenamento remoto for concluída.
+## Como o sistema funciona
 
-## Como usar a interface
+1. Pessoa se cadastra como aluno/professor ou entra em conta existente.
+2. Administração aprova o vínculo para votação.
+3. Administração cria eleição **Planejada**, adiciona pelo menos dois candidatos e clica **Abrir**.
+4. Pessoa aprovada e elegível vota dentro do prazo; o servidor impede voto duplicado.
+5. Resultados são consultados após o encerramento.
 
-1. Abra o [Eleição Escolar publicado](https://sistema-escola-p7xy.onrender.com).
-2. Faça o cadastro ou entre pela tela inicial.
-3. Use o menu lateral para navegar pelas áreas.
-4. Na área **Administração**, utilize o painel de criação de eleição para informar nome, modalidade, município, UF, período e descrição.
-5. Use os controles de administração para consultar e gerenciar as eleições e registros de teste.
-6. Na área de votação, escolha uma candidatura fictícia e finalize a simulação.
+## Tecnologias da aplicação atual
 
-### Modalidades disponíveis na interface
+**HTML · CSS · JavaScript · Node.js · Express · PostgreSQL · PWA · GitHub · Render.**
 
-- Grêmio estudantil
-- Representante de turma
-- Direção escolar
-- Simulação livre
+O código atual de `server.js`, `public/app.js`, `render.yaml` e os guias técnicos ficam na **branch de publicação**. O conteúdo antigo presente em `main` é preservado para evitar alterações involuntárias no protótipo anterior e no fluxo de implantação já existente.
 
-## Tecnologias
+## Proteção de dados
 
-- HTML
-- CSS
-- JavaScript
-- Progressive Web App (PWA): manifest e service worker
-- GitHub: versionamento do código
-- Render: publicação da interface
+Este repositório **não publica senhas, e-mails reais de usuários, cookies, tokens de ativação, segredos de sessão nem credenciais de banco**. Um `.env.example` com nomes e valores em branco está disponível na branch atual. As configurações verdadeiras pertencem somente ao ambiente privado do operador.
 
-O repositório também contém arquivos para uma API de servidor e uma configuração declarativa do Render. A integração dessas partes com o fluxo da interface e com o banco de dados precisa ser validada antes de considerar o sistema pronto para uso com dados persistentes.
+---
 
-## Dados, autenticação e persistência
-
-O estado atual da interface utiliza mecanismos de demonstração no navegador. O cadastro e a entrada presentes na página não devem ser considerados autenticação segura de usuários. Alguns dados de administração e votos de teste são mantidos no armazenamento local do navegador.
-
-- O armazenamento local não sincroniza automaticamente entre dispositivos ou navegadores.
-- Limpar os dados do navegador pode remover registros locais.
-- Os números e resultados de demonstração não representam uma eleição oficial.
-- Não insira senhas reais, dados pessoais ou informações institucionais sensíveis.
-
-**Firebase:** a conexão completa com Firebase Authentication e Firestore, incluindo regras de segurança e persistência compartilhada, deve ser concluída e testada antes de afirmar que os dados são salvos em uma base remota. A presença de arquivos de servidor ou de configuração de hospedagem, por si só, não confirma essa integração.
-
-## Fluxograma
-
-![Fluxograma do sistema Eleição Escolar](docs/fluxograma-sistema.svg)
-
-## Publicação no Render
-
-O serviço está configurado como um **Static Site**, com a pasta `public/` como diretório publicado.
-
-Para atualizar a interface:
-
-1. Faça as alterações no repositório.
-2. Envie um commit para a branch `main`.
-3. O Render inicia o deploy automaticamente.
-4. Confira o estado da implantação no [painel do Render](https://dashboard.render.com/static/srv-dbmefeifngtc73f4te00).
-
-## Segurança e uso responsável
-
-- Use exclusivamente dados fictícios durante testes.
-- Não reutilize senhas de e-mail, contas escolares ou outros serviços.
-- Não publique chaves privadas, tokens ou credenciais.
-- Não utilize esta versão para registrar votos reais.
-- Antes de uso com pessoas reais, é necessário implementar e auditar autenticação, regras de acesso, persistência, integridade dos votos, prevenção de duplicidade e proteção de dados.
-
-## Contexto escolar
-
-Projeto educacional desenvolvido com referência ao Colégio Estadual Presidente Kennedy. A menção à instituição é contextual e não significa que o sistema seja um serviço oficial ou que a escola endosse a aplicação.
+**Atenção:** não há licença de software declarada neste repositório. O projeto continua experimental e em processo de validação.
