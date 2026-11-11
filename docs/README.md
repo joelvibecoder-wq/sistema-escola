@@ -6,13 +6,14 @@ Esta pasta reúne as informações **públicas e não confidenciais** da versão
 
 | Documento | Conteúdo |
 | --- | --- |
-| [Diagrama lógico em imagem](diagrama-logico-kennedy-vota.svg) | Ilustração SVG escalável de perfis, frontend, API, banco e ciclo eleitoral |
+| [Diagrama lógico em imagem](fluxograma-logico-kennedy-vota.png) | Fluxograma PNG original enviado pelo autor |
 | [Guia do projeto](GUIA-DO-PROJETO.md) | Instalação, configuração, uso, teste, implantação e solução de problemas |
 | [Arquitetura](ARQUITETURA.md) | Tecnologias, módulos, banco, rotas, autenticação e regras de votação |
 | [Segurança e privacidade](SEGURANCA.md) | Dados publicáveis, informações privadas e limitações |
 | [Configuração Render](CONFIGURACAO-RENDER-KENNEDY.md) | Referência atual para hospedagem e variáveis sem segredos |
 | [Instalação e login](KENNEDY-VOTA-INSTALACAO-E-LOGIN.md) | Ponte de endereço antigo para o guia atualizado |
-| [Fluxograma de compatibilidade](fluxograma-sistema.svg) | Cópia do diagrama atual, preservando links antigos |
+| [Versão vetorial anterior](diagrama-logico-kennedy-vota.svg) | Outra representação da arquitetura em formato SVG |
+| [Fluxograma de compatibilidade](fluxograma-sistema.svg) | Versão vetorial anterior, preservada para compatibilidade |
 
 ## Endereços
 
