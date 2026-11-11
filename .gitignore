@@ -1,0 +1,21 @@
+# Configurações privadas e dados pessoais
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+secrets.*
+credentials.*
+
+# Arquivos locais de desenvolvimento
+node_modules/
+*.log
+npm-debug.log*
+coverage/
+.nyc_output/
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
