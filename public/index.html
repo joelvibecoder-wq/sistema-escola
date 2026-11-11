@@ -706,6 +706,139 @@ body.dark .election-setup-hint{color:#add4b8}
 body.dark .election-setup-hint b{color:#e8faee}
 body.dark #page-vote .vote-refresh-line .btn{background:#294a35;color:#d8f9e2;border:1px solid #4a7858}
 body.dark #page-vote .vote-feedback{background:#193b28;color:#d7f4df;border:1px solid #457a57}
+
+/* Menu de perfil autenticado no canto superior direito. */
+.profile-anchor{position:relative;min-width:0}
+.profile-trigger{
+  text-align:left;
+  cursor:pointer;
+  color:var(--ink);
+  max-width:min(315px,48vw);
+  transition:background .2s,border-color .2s,box-shadow .2s;
+}
+.profile-trigger:hover,.profile-trigger[aria-expanded="true"]{
+  border-color:#78b98e;
+  background:#eef8f0;
+  box-shadow:0 4px 14px #152f1c17;
+}
+.profile-trigger .user-text{min-width:0}
+.profile-trigger .user-text strong{
+  max-width:185px;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  overflow:hidden;
+}
+.profile-caret{color:var(--green);font-weight:900;margin-left:1px;line-height:1}
+.profile-menu{
+  position:absolute;
+  right:0;
+  top:calc(100% + 11px);
+  z-index:60;
+  width:min(372px,calc(100vw - 24px));
+  max-height:min(76vh,660px);
+  overflow:auto;
+  overscroll-behavior:contain;
+  background:#ffffff;
+  border:1px solid #d1e3d5;
+  border-radius:19px;
+  box-shadow:0 22px 65px #091d123e;
+  padding:19px;
+  color:#1a3525;
+}
+.profile-menu-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:14px}
+.profile-menu-head h2{font-size:18px;margin:4px 0 0;letter-spacing:-.35px;color:inherit}
+.profile-eyebrow{font-size:10px;color:#408458;letter-spacing:1.3px;font-weight:800}
+.profile-close{background:#edf5ef;border:1px solid #d5e6d9;border-radius:9px;color:#345940;width:32px;height:32px;flex-shrink:0}
+.profile-close:hover{background:#d9eedf}
+.profile-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:12px;margin:1px 0 13px}
+.profile-table th,.profile-table td{padding:11px 7px;border-bottom:1px solid #dce9df;vertical-align:top;overflow-wrap:anywhere}
+.profile-table th{width:71px;text-align:left;color:#5e806a;font-weight:750}
+.profile-table td{color:#1c3b27;font-weight:700}
+.profile-password-mask{letter-spacing:2px;font-weight:800;font-size:15px}
+.profile-security-note{display:block;font-size:10px;line-height:1.4;color:#66836e;font-weight:450;letter-spacing:0;margin-top:3px}
+.profile-disclosure{border-bottom:1px solid #dce9df;padding:2px 0}
+.profile-disclosure summary{list-style-position:inside;padding:12px 4px;font-size:12px;font-weight:750;color:#245c37;cursor:pointer}
+.profile-disclosure summary:hover{color:#187241}
+.profile-inline-form{display:grid;gap:8px;padding:4px 0 14px}
+.profile-inline-form label{font-size:11px;color:#446c50;font-weight:750}
+.profile-inline-form input{
+  width:100%;
+  border:1px solid #cbdcca;
+  background:#f9fdfa;
+  color:#183b25;
+  border-radius:10px;
+  padding:10px 12px;
+  min-height:42px;
+}
+.profile-inline-form .password-input-wrap{display:block;position:relative}
+.profile-inline-form .password-input-wrap input{padding-right:48px}
+.profile-inline-form .password-toggle{
+  position:absolute;
+  top:50%;right:4px;transform:translateY(-50%);
+  width:40px;height:38px;
+  display:grid;place-items:center;
+  color:#4c7b59;background:transparent;border-radius:9px;
+}
+.profile-inline-form .password-toggle svg[hidden]{display:none!important}
+.profile-inline-form .password-toggle:hover{background:#e2f3e7}
+.profile-inline-form .btn{width:100%;font-size:12px}
+.profile-logout,.profile-logout-confirm{
+  display:flex;justify-content:center;align-items:center;
+  background:#c83139;
+  color:#fff;
+  border:1px solid #dc555a;
+  border-radius:11px;
+  padding:12px 15px;
+  font-weight:800;
+  box-shadow:0 5px 15px #a9202628;
+}
+.profile-logout{width:100%;margin-top:17px}
+.profile-logout:hover,.profile-logout-confirm:hover{background:#a8212a;color:#fff}
+.logout-modal{z-index:120}
+.logout-dialog{border:1px solid #e8d2d3}
+.logout-dialog h3{font-size:21px}
+.logout-dialog-icon{
+  display:grid;place-items:center;
+  width:43px;height:43px;border-radius:14px;
+  background:#fff0f0;color:#b52d37;font-size:25px;margin-bottom:14px;
+}
+body.dark .profile-trigger{color:#e9f7ed}
+body.dark .profile-trigger:hover,body.dark .profile-trigger[aria-expanded="true"]{
+  background:#244b35;border-color:#75bc8c;
+}
+body.dark .profile-caret{color:#a1e7b4}
+body.dark .profile-menu{background:#142b20;border-color:#396d4d;color:#e8faed;box-shadow:0 22px 65px #0008}
+body.dark .profile-eyebrow{color:#9ee6b3}
+body.dark .profile-close{background:#274835;border-color:#416951;color:#dbf8e2}
+body.dark .profile-close:hover{background:#356347}
+body.dark .profile-table th,body.dark .profile-table td,body.dark .profile-disclosure{border-color:#315540}
+body.dark .profile-table th{color:#a9ceb3}
+body.dark .profile-table td{color:#ecfff0}
+body.dark .profile-security-note{color:#a3c4ae}
+body.dark .profile-disclosure summary{color:#b8efc5}
+body.dark .profile-inline-form label{color:#c1dfc7}
+body.dark .profile-inline-form input{background:#0e2117;border-color:#3a6348;color:#edfff2}
+body.dark .profile-inline-form .password-toggle{color:#b1e8c2}
+body.dark .profile-inline-form .password-toggle:hover{background:#2c5940}
+body.dark .logout-dialog{background:#1d2b22;border:1px solid #644045;color:#f8eded}
+body.dark .logout-dialog h3{color:#fff5f5}
+body.dark .logout-dialog p{color:#d7bbc1}
+body.dark .logout-dialog-icon{background:#54272b;color:#ffbfc2}
+@media(max-width:760px){
+  .profile-trigger{padding:5px 8px;max-width:none}
+  .profile-trigger .avatar{height:34px;width:34px}
+  .profile-trigger .user-text{display:block}
+  .profile-trigger .user-text strong{max-width:116px;font-size:11px}
+  .profile-trigger .user-text small{display:none}
+  .profile-menu{position:fixed;right:12px;top:71px;width:min(365px,calc(100vw - 24px));max-height:calc(100dvh - 160px)}
+  .logout-dialog .modal-actions{flex-wrap:wrap}
+  .logout-dialog .modal-actions button{flex:1;min-width:115px}
+}
+@media(max-width:390px){
+  .profile-trigger .user-text strong{max-width:78px}
+  .profile-caret{font-size:12px}
+}
+
 </style>
 </head>
 <body>
@@ -725,7 +858,44 @@ body.dark #page-vote .vote-feedback{background:#193b28;color:#d7f4df;border:1px 
 <div class="main">
 <header class="topbar">
   <div class="top-left"><button class="icon-btn hamb" id="hamb" aria-label="Abrir menu">☰</button><div><h1 id="topTitle">Visão geral</h1><p>Colégio Estadual Presidente Kennedy</p></div></div>
-  <div class="top-actions"><button class="icon-btn" id="themeBtn" title="Alternar tema" aria-label="Alternar tema">◐</button><div class="user-chip"><div class="avatar" id="userAvatar">A</div><div class="user-text"><strong id="userName">Administrador</strong><small id="userRole">Gestão escolar</small></div></div></div>
+  <div class="top-actions">
+  <button class="icon-btn" id="themeBtn" title="Alternar tema" aria-label="Alternar tema">◐</button>
+  <div class="profile-anchor">
+    <button type="button" class="user-chip profile-trigger" id="profileTrigger" aria-label="Abrir meu perfil" aria-expanded="false" aria-controls="profileMenu">
+      <div class="avatar" id="userAvatar">A</div>
+      <div class="user-text"><strong id="userName">Usuário</strong><small id="userRole">Conta escolar</small></div>
+      <span class="profile-caret" aria-hidden="true">⌄</span>
+    </button>
+    <section class="profile-menu" id="profileMenu" aria-label="Informações da minha conta" hidden>
+      <div class="profile-menu-head"><div><span class="profile-eyebrow">MINHA CONTA</span><h2>Informações do perfil</h2></div><button class="profile-close" id="profileClose" type="button" aria-label="Fechar perfil">✕</button></div>
+      <table class="profile-table">
+        <tbody>
+          <tr><th scope="row">Nome</th><td id="profileName">—</td></tr>
+          <tr><th scope="row">E-mail</th><td id="profileEmail">—</td></tr>
+          <tr><th scope="row">Idade</th><td id="profileAge">Não informada</td></tr>
+          <tr><th scope="row">Senha</th><td><span class="profile-password-mask" aria-label="Senha protegida">••••••••</span><small class="profile-security-note">Protegida e não exibida pelo sistema</small></td></tr>
+        </tbody>
+      </table>
+      <details class="profile-disclosure" id="profileAgeDetails"><summary>Informar ou atualizar idade</summary>
+        <form id="profileAgeForm" class="profile-inline-form">
+          <label for="profileAgeInput">Idade em anos (opcional)</label>
+          <input type="number" id="profileAgeInput" min="4" max="120" step="1" inputmode="numeric" placeholder="Ex.: 18">
+          <button class="btn btn-soft" type="submit" id="profileAgeSave">Salvar idade</button>
+        </form>
+      </details>
+      <details class="profile-disclosure" id="profilePasswordDetails"><summary>Alterar minha senha</summary>
+        <form id="profilePasswordForm" class="profile-inline-form">
+          <label for="profileCurrentPass">Senha atual</label>
+          <span class="password-input-wrap"><input id="profileCurrentPass" type="password" autocomplete="current-password"  required><button type="button" class="password-toggle" data-password-toggle="profileCurrentPass" aria-controls="profileCurrentPass" aria-pressed="false" aria-label="Mostrar senha" title="Mostrar senha"><svg class="password-eye-open" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg><svg class="password-eye-closed" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" hidden><path d="M3 3l18 18"/><path d="M10.6 5.1c.46-.07.93-.1 1.4-.1 6.5 0 10 7 10 7a15.6 15.6 0 0 1-3.13 3.98M6.2 6.5C3.4 8.3 2 12 2 12s3.5 7 10 7c1.7 0 3.23-.47 4.55-1.18"/><path d="M10.6 9.4A3 3 0 0 1 14.6 13.4"/></svg></button></span>
+          <label for="profileNewPass">Nova senha (mínimo 10 caracteres)</label>
+          <span class="password-input-wrap"><input id="profileNewPass" type="password" autocomplete="new-password" minlength="10" required><button type="button" class="password-toggle" data-password-toggle="profileNewPass" aria-controls="profileNewPass" aria-pressed="false" aria-label="Mostrar senha" title="Mostrar senha"><svg class="password-eye-open" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg><svg class="password-eye-closed" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" hidden><path d="M3 3l18 18"/><path d="M10.6 5.1c.46-.07.93-.1 1.4-.1 6.5 0 10 7 10 7a15.6 15.6 0 0 1-3.13 3.98M6.2 6.5C3.4 8.3 2 12 2 12s3.5 7 10 7c1.7 0 3.23-.47 4.55-1.18"/><path d="M10.6 9.4A3 3 0 0 1 14.6 13.4"/></svg></button></span>
+          <button class="btn btn-soft" type="submit" id="profilePasswordSave">Salvar nova senha</button>
+        </form>
+      </details>
+      <button class="profile-logout" id="profileLogout" type="button">Sair da conta</button>
+    </section>
+  </div>
+</div>
 </header>
 <main class="content">
 <section class="page active" id="page-dashboard">
@@ -800,6 +970,17 @@ body.dark #page-vote .vote-feedback{background:#193b28;color:#d7f4df;border:1px 
 <nav class="mobile-nav" id="mobileNav"><button class="active" data-page="dashboard"><span>▦</span>Início</button><button data-page="elections"><span>◉</span>Eleições</button><button data-page="candidates"><span>♙</span>Candidatos</button><button data-page="vote"><span>✓</span>Votar</button><button data-page="results"><span>▥</span>Apuração</button></nav>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <div class="modal-backdrop" id="voteModal"><div class="modal"><h3>Confirmar voto</h3><p id="modalText">Confira a candidatura antes de confirmar.</p><p><b>Depois de confirmado, seu voto não poderá ser alterado nesta eleição.</b></p><div class="modal-actions"><button class="btn btn-line" id="modalCancel">Voltar</button><button class="btn btn-primary" id="modalConfirm">Confirmar</button></div></div></div>
+<div class="modal-backdrop logout-modal" id="logoutModal" role="dialog" aria-modal="true" aria-labelledby="logoutTitle" aria-describedby="logoutDescription">
+  <div class="modal logout-dialog">
+    <div class="logout-dialog-icon" aria-hidden="true">↪</div>
+    <h3 id="logoutTitle">Sair da sua conta?</h3>
+    <p id="logoutDescription">Você será desconectado do Kennedy Vota e precisará entrar novamente com sua conta para acessar o painel.</p>
+    <div class="modal-actions">
+      <button class="btn btn-line" id="cancelLogout" type="button">Cancelar</button>
+      <button class="btn profile-logout-confirm" id="confirmLogout" type="button">Sim, sair da conta</button>
+    </div>
+  </div>
+</div>
 <div class="auth-screen open" id="authScreen">
   <div class="auth-card auth-expanded">
     <div class="auth-main">
