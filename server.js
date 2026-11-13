@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import rateLimit from "express-rate-limit";
 import { OAuth2Client } from "google-auth-library";
-import { randomUUID, timingSafeEqual } from "node:crypto";
+import { randomUUID, timingSafeEqual, randomBytes, createHash } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -31,8 +31,18 @@ const wrap=fn=>(req,res,next)=>Promise.resolve(fn(req,res,next)).catch(next);
 const limitAuth=rateLimit({windowMs:15*60*1000,limit:15,standardHeaders:"draft-7",legacyHeaders:false});
 const limitVote=rateLimit({windowMs:60*1000,limit:12,standardHeaders:"draft-7",legacyHeaders:false});
 function text(x,max=160){return String(x??"").trim().slice(0,max);}
-function validEmail(x){return typeof x==="string"&&x.length<=254&&/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x);}
-function jsonUser(u){return {id:u.id,name:u.full_name,email:u.email,requestedRole:u.requested_role,role:u.role,approved:u.approved,ageYears:u.age_years??null};}
+function validEmail(x){return typeof x==="string"&&x.length<=254&&/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x)&&!/(?:example\.(?:com|org|net)|mailinator\.|10minutemail\.|tempmail\.|guerrillamail\.)/i.test(x);}
+const normalized=x=>String(x||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g," ");
+const inappropriate=x=>/\b(?:puta|puto|putaria|caralho|porra|merda|buceta|viado|vadia|vagabundo|vagabunda|arrombado|arrombada|foda|fodase|cuzao|cacete|piranha)\b/.test(normalized(x));
+const validName=x=>x.length>=3&&x.length<=60&&!inappropriate(x)&&/^[\p{L}\p{M} .'-]+$/u.test(x);
+const emailTokenHash=x=>createHash("sha256").update(x).digest("hex");
+async function sendConfirmEmail(email,token){
+ if(!process.env.RESEND_API_KEY||!process.env.EMAIL_FROM||!process.env.APP_BASE_URL)throw Error("ENV_EMAIL_NOT_CONFIGURED");
+ const url=new URL("/?verify="+encodeURIComponent(token),process.env.APP_BASE_URL).toString();
+ const r=await fetch("https://api.resend.com/emails",{method:"POST",headers:{"Authorization":"Bearer "+process.env.RESEND_API_KEY,"Content-Type":"application/json"},body:JSON.stringify({from:process.env.EMAIL_FROM,to:[email],subject:"Confirme seu cadastro no Kennedy Vota",html:'<p>Para confirmar o cadastro no Kennedy Vota, clique no link:</p><p><a href="'+url+'">Confirmar meu e-mail</a></p><p>Validade: 24 horas.</p>'})});
+ if(!r.ok)throw Error("Falha ao enviar e-mail de confirmação.");
+}
+function jsonUser(u){return {id:u.id,name:u.full_name,email:u.email,requestedRole:u.requested_role,role:u.role,approved:u.approved,ageYears:u.age_years??null,emailVerified:u.email_verified===true,banned:u.banned===true,banReason:u.ban_reason||""};}
 const cname="kennedy_session";
 function setCookie(res,id){
   if(secret.length<32)throw Error("SESSION_SECRET não configurado");
@@ -45,8 +55,10 @@ function available(req,res,next){if(!db||!dbReady||secret.length<32)return error
 async function logged(req,res,next){
  try{
   const p=jwt.verify(getCookie(req),secret,{algorithms:["HS256"],issuer:"kennedy-vota",audience:"kennedy-web"});
-  const {rows}=await db.query("SELECT id,full_name,email,requested_role,role,approved,age_years FROM kv_users WHERE id=$1",[p.sub]);
+  const {rows}=await db.query("SELECT id,full_name,email,requested_role,role,approved,age_years,email_verified,banned,ban_reason FROM kv_users WHERE id=$1",[p.sub]);
   if(!rows.length)return error(res,401,"Sua sessão expirou.");
+   if(rows[0].banned)return res.status(403).json({code:"BANNED",error:"Sua conta está bloqueada.",reason:rows[0].ban_reason||"Descumprimento das regras do portal."});
+   if(rows[0].email_verified!==true)return error(res,403,"Confirme seu e-mail para continuar.");
   req.current=rows[0];next();
  }catch{return error(res,401,"Entre na sua conta para continuar.");}
 }
@@ -73,6 +85,10 @@ async function initDb(){
  );
  // Perfil: idade opcional, visível apenas ao próprio usuário autenticado.
  await db.query("ALTER TABLE kv_users ADD COLUMN IF NOT EXISTS age_years SMALLINT;");
+ await db.query("ALTER TABLE kv_users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN NOT NULL DEFAULT TRUE;");
+ await db.query("ALTER TABLE kv_users ADD COLUMN IF NOT EXISTS banned BOOLEAN NOT NULL DEFAULT FALSE;");
+ await db.query("ALTER TABLE kv_users ADD COLUMN IF NOT EXISTS ban_reason TEXT;");
+ await db.query("CREATE TABLE IF NOT EXISTS kv_email_confirmations(user_id UUID PRIMARY KEY REFERENCES kv_users(id) ON DELETE CASCADE,token_hash TEXT NOT NULL,expires_at TIMESTAMPTZ NOT NULL);");
  dbReady=true;
  console.info("Kennedy Vota: PostgreSQL conectado e estrutura de tabelas verificada.");
 }
@@ -82,20 +98,33 @@ app.get("/api/status",wrap(async(req,res)=>{
 }));
 app.get("/api/config",(req,res)=>res.json({googleClientId:process.env.GOOGLE_CLIENT_ID||"",siteName:"Kennedy Vota",demo:false}));
 app.post("/api/register",limitAuth,sameOrigin,available,wrap(async(req,res)=>{
- const name=text(req.body?.name,120),email=text(req.body?.email,254).toLowerCase();
- const role=text(req.body?.requestedRole,30),password=String(req.body?.password||"");
- if(name.length<3||!validEmail(email)||!["aluno","professor"].includes(role)||password.length<10||Buffer.byteLength(password)>72)
-  return error(res,400,"Informe nome, e-mail, perfil e senha de 10 a 72 bytes.");
- const hash=await bcrypt.hash(password,12);
+ const name=String(req.body?.name||"").trim().replace(/\s+/g," "),email=String(req.body?.email||"").trim().toLowerCase(),role=text(req.body?.requestedRole,30),password=String(req.body?.password||"");
+ if(!validName(name))return error(res,400,"Nome inválido, impróprio ou com mais de 60 caracteres.");
+ if(!validEmail(email))return error(res,400,"Informe um e-mail válido e não temporário.");
+ if(!["aluno","professor"].includes(role)||password.length<10||password.length>64||Buffer.byteLength(password)>72||!/[a-z]/i.test(password)||!/[0-9]/.test(password))return error(res,400,"Use um perfil válido e uma senha de 10 a 64 caracteres, com letras e números.");
+ if(!process.env.RESEND_API_KEY||!process.env.EMAIL_FROM||!process.env.APP_BASE_URL)return error(res,503,"O envio de confirmação de e-mail ainda não está configurado pela escola.");
+ const hash=await bcrypt.hash(password,12),id=randomUUID(),token=randomBytes(32).toString("hex");
  try{
-  const r=await db.query("INSERT INTO kv_users(id,email,full_name,requested_role,password_hash) VALUES($1,$2,$3,$4,$5) RETURNING *",[randomUUID(),email,name,role,hash]);
-  setCookie(res,r.rows[0].id);res.status(201).json({user:jsonUser(r.rows[0])});
- }catch(e){if(e.code==="23505")return error(res,409,"E-mail já cadastrado. Use a opção Entrar.");throw e;}
+  await db.query("INSERT INTO kv_users(id,email,full_name,requested_role,password_hash,email_verified) VALUES($1,$2,$3,$4,$5,FALSE)",[id,email,name,role,hash]);
+  await db.query("INSERT INTO kv_email_confirmations(user_id,token_hash,expires_at) VALUES($1,$2,now()+interval '24 hours')",[id,emailTokenHash(token)]);
+  try{await sendConfirmEmail(email,token)}catch(err){await db.query("DELETE FROM kv_users WHERE id=$1",[id]);throw err;}
+  res.status(201).json({verificationRequired:true,message:"Enviamos um link para seu e-mail. Confirme o endereço antes de entrar."});
+ }catch(err){if(err.code==="23505")return error(res,409,"E-mail já cadastrado. Use a opção Entrar.");throw err;}
+}));
+app.post("/api/verify-email",limitAuth,sameOrigin,available,wrap(async(req,res)=>{
+ const token=String(req.body?.token||"");if(!/^[a-f0-9]{64}$/.test(token))return error(res,400,"Link inválido.");
+ const r=await db.query("SELECT user_id FROM kv_email_confirmations WHERE token_hash=$1 AND expires_at>now()",[emailTokenHash(token)]);
+ if(!r.rowCount)return error(res,400,"Link expirado ou inválido.");
+ await db.query("UPDATE kv_users SET email_verified=TRUE WHERE id=$1",[r.rows[0].user_id]);
+ await db.query("DELETE FROM kv_email_confirmations WHERE user_id=$1",[r.rows[0].user_id]);
+ res.json({ok:true,message:"E-mail confirmado! Você já pode entrar."});
 }));
 app.post("/api/login",limitAuth,sameOrigin,available,wrap(async(req,res)=>{
  const email=text(req.body?.email,254).toLowerCase(),password=String(req.body?.password||"");
  const {rows}=await db.query("SELECT * FROM kv_users WHERE email=$1",[email]);
  if(!rows[0]?.password_hash||!(await bcrypt.compare(password,rows[0].password_hash)))return error(res,401,"E-mail ou senha inválidos.");
+  if(rows[0].banned)return res.status(403).json({code:"BANNED",error:"Sua conta está bloqueada.",reason:rows[0].ban_reason||"Descumprimento das regras do portal."});
+  if(rows[0].email_verified===false)return error(res,403,"Confirme seu e-mail no link recebido antes de entrar.");
  setCookie(res,rows[0].id);res.json({user:jsonUser(rows[0])});
 }));
 app.post("/api/google",limitAuth,sameOrigin,available,wrap(async(req,res)=>{
@@ -106,7 +135,8 @@ app.post("/api/google",limitAuth,sameOrigin,available,wrap(async(req,res)=>{
  try{profile=(await google.verifyIdToken({idToken:credential,audience:process.env.GOOGLE_CLIENT_ID})).getPayload();}
  catch{return error(res,401,"Falha ao verificar login Google.");}
  if(!profile?.sub||!validEmail(profile.email)||profile.email_verified!==true)return error(res,403,"Conta Google não verificada.");
- const email=profile.email.toLowerCase(),name=text(profile.name||email,120);
+ const email=profile.email.toLowerCase(),name=text(profile.name||email,60);
+ if(!validName(name))return error(res,400,"O nome da conta Google contém termos não permitidos. Atualize seu nome no Google.");
  let user=(await db.query("SELECT * FROM kv_users WHERE google_sub=$1",[profile.sub])).rows[0];
  if(!user){
   const exists=await db.query("SELECT id FROM kv_users WHERE email=$1",[email]);
@@ -221,6 +251,17 @@ app.post("/api/profile/password",limitAuth,sameOrigin,available,logged,wrap(asyn
  res.json({ok:true});
 }));
 app.post("/api/logout",sameOrigin,(req,res)=>{clearCookie(res);res.json({ok:true});});
+app.get("/api/users",available,logged,admin,wrap(async(req,res)=>{
+ const {rows}=await db.query("SELECT id,full_name,email,role,requested_role,approved,banned,ban_reason,email_verified FROM kv_users ORDER BY created_at DESC LIMIT 500");res.json({users:rows});
+}));
+app.post("/api/users/:id/ban",sameOrigin,available,logged,admin,wrap(async(req,res)=>{
+ const reason=String(req.body?.reason||"").trim();if(reason.length<5||reason.length>500)return error(res,400,"Informe um motivo entre 5 e 500 caracteres.");
+ if(req.params.id===req.current.id)return error(res,400,"Você não pode se bloquear.");
+ const r=await db.query("UPDATE kv_users SET banned=TRUE,ban_reason=$1 WHERE id=$2 AND (role IS DISTINCT FROM 'admin') RETURNING id",[reason,req.params.id]);if(!r.rowCount)return error(res,404,"Conta não encontrada ou protegida.");res.json({ok:true});
+}));
+app.post("/api/users/:id/unban",sameOrigin,available,logged,admin,wrap(async(req,res)=>{
+ const r=await db.query("UPDATE kv_users SET banned=FALSE,ban_reason=NULL WHERE id=$1 AND (role IS DISTINCT FROM 'admin') RETURNING id",[req.params.id]);if(!r.rowCount)return error(res,404,"Conta não encontrada ou protegida.");res.json({ok:true});
+}));
 app.get("/api/users/pending",available,logged,admin,wrap(async(req,res)=>{
  const {rows}=await db.query("SELECT id,full_name,email,requested_role,created_at FROM kv_users WHERE approved=false ORDER BY created_at LIMIT 200");
  res.json({users:rows});
