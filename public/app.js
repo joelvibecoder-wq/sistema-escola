@@ -11,9 +11,10 @@
   if(method!=="GET"){opt.headers["Content-Type"]="application/json";opt.headers["X-Kennedy-Request"]="1";opt.body=JSON.stringify(data||{});}
   let r;try{r=await fetch(url,opt)}catch{throw Error("Sem conexão com o servidor. Verifique a internet.");}
   const val=await r.json().catch(()=>({}));
-  if(!r.ok)throw Error(val.error||"O servidor não concluiu a operação.");
+  if(!r.ok){if(val.code==="BANNED"){showBan(val.reason);throw Error(val.error||"Conta bloqueada.")}throw Error(val.error||"O servidor não concluiu a operação.");}
   return val;
  }
+ function showBan(reason){S.user=null;$("banReason").textContent=reason||"Violação das regras do portal.";$("banOverlay").classList.add("open");$("appShell").hidden=true;$("authScreen").classList.remove("open")}
  function isAdmin(){return S.user?.role==="admin"&&S.user?.approved===true}
  function isOpen(e){return e.status==="Aberta"&&Date.now()>=new Date(e.starts_at).getTime()&&Date.now()<new Date(e.ends_at).getTime()}
  function eligibleToVote(e){const roles=e?.eligible_roles||[];return roles.includes(S.user?.role)||(S.user?.role==="admin"&&roles.includes("professor"));}
@@ -21,7 +22,7 @@
  function byElection(id){return S.elections.find(e=>e.id===id)}
  function byCandidate(id){return S.candidates.find(c=>c.id===id)}
  function options(rows,empty="Nenhuma eleição disponível"){return rows.length?rows.map(e=>'<option value="'+escape(e.id)+'">'+escape(e.title)+'</option>').join(""):'<option value="">'+escape(empty)+'</option>'}
- function theme(dark){document.body.classList.toggle("dark",dark);$("darkSwitch").checked=dark;$("themeBtn").textContent=dark?"☀":"◐";const loginTheme=$("authThemeBtn");if(loginTheme){loginTheme.textContent=dark?"☀ Modo claro":"◐ Modo escuro";loginTheme.setAttribute("aria-pressed",String(dark));}localStorage.setItem("kennedy.theme",dark?"dark":"light");}
+ function theme(dark){document.body.classList.toggle("dark",dark);$("darkSwitch").checked=dark;$("themeBtn").textContent=dark?"☀":"☾";const loginTheme=$("authThemeBtn");if(loginTheme){loginTheme.textContent=dark?"☀ Modo claro":"☾ Modo escuro";loginTheme.setAttribute("aria-pressed",String(dark));}localStorage.setItem("kennedy.theme",dark?"dark":"light");}
  theme(localStorage.getItem("kennedy.theme")==="dark"||(localStorage.getItem("kennedy.theme")===null&&window.matchMedia("(prefers-color-scheme: dark)").matches));
  $("themeBtn").onclick=()=>theme(!document.body.classList.contains("dark"));$("authThemeBtn").onclick=()=>theme(!document.body.classList.contains("dark"));
  $("darkSwitch").onchange=()=>theme($("darkSwitch").checked);
@@ -38,16 +39,17 @@
   const names={dashboard:"Visão geral",elections:"Eleições",candidates:"Candidatos",vote:"Área de votação",results:"Apuração",settings:"Configurações",users:"Cadastros"};
   $("topTitle").textContent=names[page]||"Kennedy Vota";S.activePage=page;
   if(page==="vote"){renderVote();refresh().catch(e=>{$("voteFeedback").hidden=false;$("voteFeedback").textContent=e.message;});}
-  if(page==="results")renderResults();if(page==="users")renderUsers();
+  if(page==="results")renderResults();if(page==="users"){renderUsers();renderAllUsers();}
   const side=document.querySelector(".side");side.classList.remove("mobile-open");side.style.cssText="";
   window.scrollTo({top:0,behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"instant":"smooth"});
  }
  document.querySelectorAll("[data-page]").forEach(b=>b.addEventListener("click",()=>go(b.dataset.page)));
  window.go=go;
- $("hamb").onclick=()=>{
-  const side=document.querySelector(".side");side.classList.toggle("mobile-open");
-  side.style.cssText=side.classList.contains("mobile-open")?"display:flex;position:fixed;inset:0 auto 0 0;width:min(290px,85vw);z-index:15;box-shadow:0 0 0 100vmax #10261970;overflow:auto":"";
- };
+ function toggleMobileMenu(open){const side=document.querySelector(".side");side.classList.toggle("mobile-open",open);side.style.cssText=open?"display:flex;position:fixed;inset:0 auto 0 0;width:min(290px,85vw);z-index:15;box-shadow:0 0 0 100vmax #10261970;overflow:auto":"";$("hamb").setAttribute("aria-expanded",String(open))}
+ $("hamb").onclick=()=>toggleMobileMenu(!document.querySelector(".side").classList.contains("mobile-open"));
+ let swipe=null;document.addEventListener("touchstart",e=>{if(innerWidth>760||e.touches.length!==1)return;const t=e.touches[0];swipe={x:t.clientX,y:t.clientY,open:document.querySelector(".side").classList.contains("mobile-open")}},{passive:true});
+ document.addEventListener("touchend",e=>{if(!swipe||innerWidth>760)return;const t=e.changedTouches[0],dx=t.clientX-swipe.x,dy=t.clientY-swipe.y;if(Math.abs(dx)>65&&Math.abs(dx)>Math.abs(dy)*1.4){if(swipe.open&&dx<0)toggleMobileMenu(false);else if(!swipe.open&&swipe.x<36&&dx>0)toggleMobileMenu(true)}swipe=null},{passive:true});
+ document.addEventListener("click",e=>{const side=document.querySelector(".side");if(side.classList.contains("mobile-open")&&!side.contains(e.target)&&!$("hamb").contains(e.target))toggleMobileMenu(false)});
  function showAuth(status){
   closeProfileMenu();
   closeLogoutModal();
@@ -350,6 +352,9 @@
   }catch(e){box.innerHTML='<div class="notice">'+escape(e.message)+'</div>';}
  }
  $("refreshUsers").onclick=renderUsers;
+ async function renderAllUsers(){if(!isAdmin())return;const box=$("allUsers");box.textContent="Carregando contas...";try{const data=await api("/api/users");box.innerHTML=data.users.map(u=>'<div class="candidate-row"><div class="details"><b>'+escape(u.full_name)+'</b><small>'+escape(u.email)+' · '+escape(u.role||u.requested_role)+(u.banned?' · BLOQUEADO':'')+'</small>'+(u.banned?'<small>Motivo: '+escape(u.ban_reason||'Não informado')+'</small>':'')+'</div>'+(u.role==='admin'?'':u.banned?'<button class="btn btn-soft" data-unban-user="'+u.id+'">Desbloquear</button>':'<button class="btn btn-danger" data-ban-user="'+u.id+'">Expulsar e bloquear</button>')+'</div>').join('')||'<div class="empty">Nenhuma conta.</div>';box.querySelectorAll('[data-ban-user]').forEach(b=>b.onclick=async()=>{const reason=prompt("Motivo da expulsão (5 a 500 caracteres):");if(reason===null)return;if(reason.trim().length<5||reason.trim().length>500)return message("Informe motivo de 5 a 500 caracteres.");try{await api("/api/users/"+encodeURIComponent(b.dataset.banUser)+"/ban","POST",{reason:reason.trim()});message("Conta bloqueada.");renderAllUsers()}catch(e){message(e.message)}});box.querySelectorAll('[data-unban-user]').forEach(b=>b.onclick=async()=>{if(!confirm("Desbloquear esta conta?"))return;try{await api("/api/users/"+encodeURIComponent(b.dataset.unbanUser)+"/unban","POST");renderAllUsers()}catch(e){message(e.message)}})}catch(e){box.textContent=e.message}}
+ $("refreshAllUsers").onclick=renderAllUsers;
+ $("banSignout").onclick=async()=>{try{await api("/api/logout","POST")}catch{}$("banOverlay").classList.remove("open");showAuth("");};
  function setAuth(mode){
   S.authMode=mode;document.querySelectorAll("[data-auth]").forEach(b=>b.classList.toggle("active",b.dataset.auth===mode));
   // Voltar à entrada convencional ao alternar as abas.
@@ -362,7 +367,7 @@
   $("authNameWrap").hidden=!signup;$("authRoleWrap").hidden=!signup;$("authName").required=signup;
   // O mínimo de 10 caracteres vale somente para SENHAS NOVAS.
   // Senhas de contas já existentes devem poder autenticar sem validação HTML de cadastro.
-  $("authPass").minLength=signup?10:1;
+  $("authPass").minLength=signup?10:1;$("authPass").maxLength=64;
   $("authPass").autocomplete=signup?"new-password":"current-password";
   $("authPass").placeholder=signup?"Crie uma senha (mínimo 10 caracteres)":"Digite a senha da sua conta";
   $("authSubmit").textContent=signup?"Criar meu cadastro":"Entrar na minha conta";
@@ -395,9 +400,12 @@
   if(S.authMode==="signup"&&$("authRole").value==="admin"){openAdminSetup();return;}
   const btn=$("authSubmit");btn.disabled=true;
   try{
-   const input={name:$("authName").value,email:$("authEmail").value,password:$("authPass").value,requestedRole:$("authRole").value};
+   const input={name:$("authName").value.trim(),email:$("authEmail").value.trim(),password:$("authPass").value,requestedRole:$("authRole").value};
+ if(S.authMode==="signup"&&(input.name.length<3||input.name.length>60||/\b(?:puta|puto|caralho|porra|merda|buceta|viado|vagabundo|vagabunda|arrombado|foda|cuzao|cacete)\b/i.test(input.name.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase()))){message("Nome inválido ou impróprio.");return}
+ if(S.authMode==="signup"&&(input.password.length<10||input.password.length>64||!/[a-z]/i.test(input.password)||!/[0-9]/.test(input.password))){message("Senha deve ter de 10 a 64 caracteres, com letras e números.");return}
    const data=await api(S.authMode==="signup"?"/api/register":"/api/login","POST",input);
-   S.user=data.user;$("authPass").value="";await afterLogin();
+   if(data.verificationRequired){$("authPass").value="";setAuth("login");showAuth(data.message);message("Confirme seu e-mail antes de entrar.");return;}
+    S.user=data.user;$("authPass").value="";await afterLogin();
   }catch(e){
    if(S.authMode==="signup"&&/já cadastrado|já existe/i.test(e.message)){
     setAuth("login");
@@ -616,6 +624,7 @@
   finally{button.disabled=false;}
  };
  async function start(){
+ const t=new URLSearchParams(location.search).get("verify");if(t){try{const v=await api("/api/verify-email","POST",{token:t});message(v.message)}catch(e){message(e.message)}finally{history.replaceState(null,"",location.pathname)}}
   setAuth("login");showAuth("");
   await checkAdminSetupAvailability();
   try{
@@ -630,10 +639,13 @@
    }
   }
  }
+ function installed(){return matchMedia("(display-mode: standalone)").matches||navigator.standalone===true}
+ function refreshInstall(){document.documentElement.classList.toggle("pwa-installed",installed());$("installApp").hidden=installed();$("installInSettings").hidden=installed()}
+ refreshInstall();matchMedia("(display-mode: standalone)").addEventListener?.("change",refreshInstall);
  let deferredInstall=null;
  window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredInstall=e;});
- window.addEventListener("appinstalled",()=>{deferredInstall=null;message("Kennedy Vota instalado!");});
- async function install(){
+ window.addEventListener("appinstalled",()=>{deferredInstall=null;document.documentElement.classList.add("pwa-installed");$("installApp").hidden=true;$("installInSettings").hidden=true;message("Kennedy Vota instalado!");});
+ async function install(){if(installed())return;
   if(deferredInstall){deferredInstall.prompt();await deferredInstall.userChoice;deferredInstall=null;return;}
   const ios=/iPad|iPhone|iPod/.test(navigator.userAgent);
   const instruction=ios?"No iPhone: toque em Compartilhar e escolha Adicionar à Tela de Início.":"No computador: use Instalar aplicativo no menu do Chrome/Edge. No Android: use Adicionar à tela inicial no menu do navegador.";
@@ -642,4 +654,6 @@
  $("installApp").onclick=install;$("installInSettings").onclick=install;
  if("serviceWorker" in navigator)navigator.serviceWorker.register("/sw.js").catch(()=>{});
  start();
+ setInterval(()=>{if(S.user)api("/api/me").catch(e=>{if(!$("banOverlay").classList.contains("open")&&/Entre na sua conta|sessão expirou/.test(e.message))showAuth("Sua sessão expirou.")})},15000);
+ window.addEventListener("focus",()=>{if(S.user)api("/api/me").catch(()=>{})});
 })();
