@@ -262,6 +262,27 @@ app.post("/api/users/:id/ban",sameOrigin,available,logged,admin,wrap(async(req,r
 app.post("/api/users/:id/unban",sameOrigin,available,logged,admin,wrap(async(req,res)=>{
  const r=await db.query("UPDATE kv_users SET banned=FALSE,ban_reason=NULL WHERE id=$1 AND (role IS DISTINCT FROM 'admin') RETURNING id",[req.params.id]);if(!r.rowCount)return error(res,404,"Conta não encontrada ou protegida.");res.json({ok:true});
 }));
+app.delete("/api/users/:id",sameOrigin,available,logged,admin,wrap(async(req,res)=>{
+ const id=String(req.params.id||"");
+ if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id))return error(res,400,"Identificador de conta inválido.");
+ if(id===req.current.id)return error(res,403,"Você não pode excluir sua própria conta administrativa.");
+ if(req.body?.confirmation!=="EXCLUIR CONTA")return error(res,400,"Confirmação de exclusão inválida.");
+ const client=await db.connect();
+ try{
+  await client.query("BEGIN");
+  const target=(await client.query("SELECT id,banned,role FROM kv_users WHERE id=$1 FOR UPDATE",[id])).rows[0];
+  if(!target){await client.query("ROLLBACK");return error(res,404,"Esta conta já não existe.");}
+  if(!target.banned||target.role==="admin"){await client.query("ROLLBACK");return error(res,403,"Somente contas bloqueadas que não sejam administrativas podem ser excluídas.");}
+  const ownership=(await client.query("SELECT COUNT(*)::int AS total FROM kv_elections WHERE created_by=$1",[id])).rows[0].total;
+  if(ownership>0){await client.query("ROLLBACK");return error(res,409,"Essa conta é responsável por eleições registradas. Exclua ou transfira essas eleições antes de excluir a conta.");}
+  // Cédulas não contêm identificadores de eleitores e permanecem na apuração.
+  await client.query("DELETE FROM kv_participation WHERE user_id=$1",[id]);
+  await client.query("DELETE FROM kv_email_confirmations WHERE user_id=$1",[id]);
+  await client.query("DELETE FROM kv_users WHERE id=$1 AND banned=TRUE AND role IS DISTINCT FROM 'admin'",[id]);
+  await client.query("COMMIT");
+  res.json({ok:true,message:"Conta excluída permanentemente do histórico de usuários bloqueados."});
+ }catch(e){await client.query("ROLLBACK");throw e}finally{client.release()}
+}));
 app.get("/api/users/pending",available,logged,admin,wrap(async(req,res)=>{
  const {rows}=await db.query("SELECT id,full_name,email,requested_role,created_at FROM kv_users WHERE approved=false ORDER BY created_at LIMIT 200");
  res.json({users:rows});
