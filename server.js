@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS demo_votes(id UUID PRIMARY KEY,election_id UUID REFER
  await db.query("ALTER TABLE demo_users ADD COLUMN IF NOT EXISTS banned BOOLEAN NOT NULL DEFAULT FALSE");
  await db.query("ALTER TABLE demo_users ADD COLUMN IF NOT EXISTS ban_reason TEXT");
  await db.query("ALTER TABLE demo_users ADD COLUMN IF NOT EXISTS banned_at TIMESTAMPTZ");
+ if(adminEmail) await db.query("UPDATE demo_users SET role='Administrador' WHERE email=$1",[adminEmail]);
 }
 app.get("/api/health",run(async(_q,s)=>{await db.query("SELECT 1");s.json({status:"ok",mode:"educational-demo"})}));
 app.post("/api/auth/register",run(async(q,s)=>{
