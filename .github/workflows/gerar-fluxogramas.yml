@@ -1,0 +1,34 @@
+name: Gerar fluxogramas PNG
+on:
+  push:
+    branches:
+      - feature/google-login-animacoes-20261109
+    paths:
+      - 'docs/fluxogramas/*.dot'
+      - '.github/workflows/gerar-fluxogramas.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  renderizar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Instalar Graphviz
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y graphviz
+      - name: Exportar imagens
+        run: |
+          dot -Gdpi=120 -Tpng docs/fluxogramas/01-acesso-e-autorizacao.dot -o docs/fluxogramas/01-acesso-e-autorizacao.png
+          dot -Gdpi=120 -Tpng docs/fluxogramas/02-gestao-votacao-apuracao.dot -o docs/fluxogramas/02-gestao-votacao-apuracao.png
+          file docs/fluxogramas/*.png
+      - name: Registrar PNGs no repositório
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/fluxogramas/*.png
+          if ! git diff --cached --quiet; then
+            git commit -m "docs: exportar fluxogramas do Kennedy Vota em PNG"
+            git push
+          fi

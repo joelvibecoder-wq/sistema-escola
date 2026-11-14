@@ -165,3 +165,10 @@ A aplicação de teste em execução no Render acompanha a branch `feature/googl
 ---
 
 **Projeto educacional experimental.** Sem garantia de adequação para eleições oficiais. Não há licença de software declarada neste repositório; não presuma uma licença sem aprovação de seu titular.
+
+
+## Fluxogramas com símbolos padronizados
+
+- [01 — Acesso e autorização (PNG)](docs/fluxogramas/01-acesso-e-autorizacao.png)
+- [02 — Gestão, votação e apuração (PNG)](docs/fluxogramas/02-gestao-votacao-apuracao.png)
+- [Visualizar os dois fluxogramas e a legenda](docs/fluxogramas/README.md)
