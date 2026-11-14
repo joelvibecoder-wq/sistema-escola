@@ -13,3 +13,7 @@
 Salve, se desejar, as imagens `01-firebase.png`, `02-criar.png`, `03-listar.png`, `04-atualizar.png`, `05-excluir.png`, `06-turma.png`, `07-nascimento.png` e `08-periodo.png` na pasta `docs/evidencias/`.
 
 Nunca capture nem publique conteúdo de `serviceAccountKey.json`, tokens, senhas, dados reais de estudantes ou outras credenciais.
+
+## Testes automáticos já preparados
+
+O projeto também possui [evidências demonstrativas no Firestore Emulator](evidencias-emulador/README.md), com logs verdadeiros de CRUD via SDK, mas essas imagens **não substituem** provas de conexão ao Firebase Cloud Firestore real.

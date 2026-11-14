@@ -125,3 +125,20 @@ Envie o link do repositório (ou da pasta deste projeto dentro dele) e as captur
 ---
 
 **Projeto educacional:** não usa dados pessoais reais e não precisa de acesso a outro sistema escolar.
+
+## Evidências automatizadas com o Firestore Emulator
+
+Foi acrescentado um teste de integração que chama o **Firebase Admin SDK de verdade**, mas o direciona ao **emulador oficial do Firestore**, não ao banco em nuvem. Esse teste não exige chave privada e não acessa cadastros reais. Ele executa CREATE, READ, UPDATE, DELETE e consultas por turma, nascimento e período, validando os resultados. O GitHub Actions transforma os logs reais dessa execução em PNGs para documentação.
+
+- [Ver evidências do emulador](docs/evidencias-emulador/)
+- [Teste programático](scripts/testar-firestore.mjs)
+- [Configuração do emulador](firebase.json)
+
+Para executar em um computador com Node.js e Java instalados:
+
+```bash
+npm install
+FIREBASE_PROJECT_ID=demo-nosql-firestore npx firebase-tools@14 emulators:exec --only firestore --project demo-nosql-firestore 'npm run test:emulador'
+```
+
+**Limitação importante:** essas imagens mostram *resultados gerados a partir dos logs de testes no emulador*. Não são capturas de tela do console Firebase e **não comprovam conexão a um projeto Firestore de produção**. Para concluir a etapa de banco em nuvem da atividade, é necessário conectar um projeto Firebase autorizado e executar `npm start` com suas credenciais locais privadas, produzindo as capturas do ambiente real.
