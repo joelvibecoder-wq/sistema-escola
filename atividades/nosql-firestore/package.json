@@ -1,0 +1,14 @@
+{
+  "name": "atividade-nosql-firestore",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Atividade didática: CRUD de alunos no Firebase Cloud Firestore",
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "start": "node src/cli.js",
+    "demo": "node src/cli.js --demo",
+    "test": "node --test"
+  },
+  "dependencies": { "firebase-admin": "^13.0.0" }
+}
