@@ -1,0 +1,9 @@
+MODO: EMULADOR OFICIAL FIRESTORE (não é nuvem)
+PROJETO FICTÍCIO: demo-nosql-firestore
+COLEÇÃO: alunos
+
+ETAPA: READ - LISTAR ALUNOS
+Total de alunos: 3
+ID: Fx6XFS7Z5kY8y2xCb6jV | Nome: Ana Silva | Turma: 3DSB | Nascimento: 2009-05-15 | Ativo: true
+ID: perea9VBEl4ftG8TanH5 | Nome: Bruno Costa | Turma: 3DSB | Nascimento: 2008-11-21 | Ativo: true
+ID: bpU50DpNUp8d2CmKlgWa | Nome: Carla Souza | Turma: 2DSA | Nascimento: 2009-05-15 | Ativo: false

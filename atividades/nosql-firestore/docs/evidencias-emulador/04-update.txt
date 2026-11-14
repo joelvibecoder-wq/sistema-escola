@@ -1,0 +1,7 @@
+MODO: EMULADOR OFICIAL FIRESTORE (não é nuvem)
+PROJETO FICTÍCIO: demo-nosql-firestore
+COLEÇÃO: alunos
+
+ETAPA: UPDATE - ATUALIZAR ALUNO
+Aluno atualizado com sucesso:
+ID: perea9VBEl4ftG8TanH5 | Nome: Bruno Costa | Turma: 3DSC | Nascimento: 2008-11-21 | Ativo: false

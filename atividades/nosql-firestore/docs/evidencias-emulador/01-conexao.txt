@@ -1,0 +1,8 @@
+MODO: EMULADOR OFICIAL FIRESTORE (não é nuvem)
+PROJETO FICTÍCIO: demo-nosql-firestore
+COLEÇÃO: alunos
+
+ETAPA: CONEXÃO AO EMULADOR
+HOST: 127.0.0.1:8080
+Conectado à API local do Firestore através do Firebase Admin SDK.
+Sem dados pessoais e sem chave de produção.
